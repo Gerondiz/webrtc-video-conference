@@ -1,6 +1,20 @@
 // src/lib/utils.ts
 import { MediaDevicesStatus } from '@/types';
 
+export const generateUsername = (): string => {
+  const adjectives = ['Happy', 'Sunny', 'Clever', 'Brave', 'Calm', 'Swift', 'Gentle', 'Wise', 'Bright', 'Free'];
+  const nouns = ['Tiger', 'Eagle', 'Dolphin', 'Panda', 'Fox', 'Wolf', 'Hawk', 'Lion', 'Owl', 'Bear'];
+  const randomNum = Math.floor(Math.random() * 1000);
+  
+  return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${
+    nouns[Math.floor(Math.random() * nouns.length)]
+  }${randomNum}`;
+};
+
+export const delay = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
 export async function checkMediaDevices(): Promise<MediaDevicesStatus> {
   try {
     // Получаем список всех доступных устройств

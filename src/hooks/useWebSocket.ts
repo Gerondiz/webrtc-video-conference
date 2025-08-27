@@ -1,6 +1,5 @@
-// src/hooks/useWebSockets.ts
+// src/hooks/useWebSocket.ts
 'use client';
-
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { WebSocketMessage } from '@/types';
 
@@ -8,7 +7,7 @@ interface UseWebSocketReturn {
   isConnected: boolean;
   isConnecting: boolean;
   sendMessage: (message: WebSocketMessage) => boolean;
-  addMessageHandler: (type: string, handler: (data: any) => void) => void;
+  addMessageHandler: <T = unknown>(type: string, handler: (data: T) => void) => void;
   removeMessageHandler: (type: string) => void;
   messages: WebSocketMessage[];
   disconnect: () => void;
@@ -22,14 +21,14 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const messageHandlers = useRef<Map<string, (data: any) => void>>(new Map());
+  const messageHandlers = useRef<Map<string, (data: unknown) => void>>(
+    new Map()
+  );
   const isMounted = useRef(true);
 
-  // Функция создания WebSocket соединения
   const connect = useCallback(() => {
     if (!isMounted.current || isConnecting) return;
-    
-    // Очищаем предыдущее соединение
+
     if (ws.current) {
       ws.current.onopen = null;
       ws.current.onclose = null;
@@ -61,10 +60,11 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
         console.log(`WebSocket disconnected: ${event.code} ${event.reason}`);
         setIsConnected(false);
         setIsConnecting(false);
-        
-        // Устанавливаем ошибку только если это не обычное закрытие
+
         if (event.code !== 1000) {
-          setError(`Connection closed: ${event.code} ${event.reason || 'No reason provided'}`);
+          setError(
+            `Connection closed: ${event.code} ${event.reason || 'No reason provided'}`
+          );
         }
       };
 
@@ -80,22 +80,21 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
           console.log('Received WebSocket message:', message);
-          
-          // Вызываем обработчик для этого типа сообщения
+
           const handler = messageHandlers.current.get(message.type);
           if (handler) {
             handler(message.data);
           }
-          
-          setMessages(prev => [...prev, message]);
+
+          setMessages((prev) => [...prev, message]);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error, event.data);
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('WebSocket connection error:', error);
       setIsConnecting(false);
-      setError(`Failed to create WebSocket: ${error.message}`);
+      setError(`Failed to create WebSocket: ${(error as Error).message}`);
     }
   }, [url, isConnecting]);
 
@@ -118,9 +117,12 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     }
   }, []);
 
-  const addMessageHandler = useCallback((type: string, handler: (data: any) => void) => {
-    messageHandlers.current.set(type, handler);
-  }, []);
+  const addMessageHandler = useCallback(
+    <T = unknown>(type: string, handler: (data: T) => void) => {
+      messageHandlers.current.set(type, handler as (data: unknown) => void);
+    },
+    []
+  );
 
   const removeMessageHandler = useCallback((type: string) => {
     messageHandlers.current.delete(type);
@@ -128,11 +130,9 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
 
   const disconnect = useCallback(() => {
     if (ws.current) {
-      // Используем код 1000 (нормальное закрытие)
       ws.current.close(1000, 'Client disconnected');
       ws.current = null;
     }
-    
     setIsConnected(false);
     setIsConnecting(false);
     setError(null);
@@ -140,10 +140,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
 
   useEffect(() => {
     isMounted.current = true;
-    
-    // Автоматическое подключение при монтировании
     connect();
-
     return () => {
       isMounted.current = false;
       disconnect();
@@ -159,6 +156,6 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     messages,
     disconnect,
     connect,
-    error
+    error,
   };
 };

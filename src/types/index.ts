@@ -1,23 +1,34 @@
-export interface User {
-  id: string;
+// src/types.ts
+
+export interface RemoteStream {
+  userId: string;
   username: string;
+  stream: MediaStream;
 }
 
-export interface Room {
+export interface ChatMessage {
   id: string;
-  users: User[];
-  hasPassword: boolean;
+  from: string;
+  text: string;
+  timestamp: Date;
 }
 
 export interface WebSocketMessage {
   type: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface WebRTCSignal {
   target?: string;
-  type: string;
-  payload: any;
+  type?: string;
+  payload?: unknown;
+}
+
+export interface MediaDeviceInfo {
+  deviceId: string;
+  kind: MediaDeviceKind;
+  label: string;
+  groupId: string;
 }
 
 export interface MediaDevices {
@@ -30,9 +41,45 @@ export interface MediaDevicesStatus {
   hasMicrophone: boolean;
 }
 
-export interface MediaDeviceInfo {
-  deviceId: string;
-  kind: MediaDeviceKind;
-  label: string;
-  groupId: string;
+export interface User {
+  id: string;
+  username: string;
+}
+
+export interface Room {
+  id: string;
+  users: User[];
+  hasPassword: boolean;
+}
+
+export interface UserJoinedMessage {
+  user: string;
+}
+
+export interface UserLeftMessage {
+  user: string;
+}
+
+export interface WebRTCOfferMessage {
+  from: string;
+  payload: RTCSessionDescriptionInit;
+}
+
+export interface WebRTCAnswerMessage {
+  from: string;
+  payload: RTCSessionDescriptionInit;
+}
+
+export interface WebRTCIceCandidateMessage {
+  from: string;
+  payload: RTCIceCandidateInit;
+}
+
+export interface ChatMessageData {
+  from: string;
+  text: string;
+}
+
+export interface ErrorMessage {
+  message: string;
 }

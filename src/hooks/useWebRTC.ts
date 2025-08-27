@@ -81,8 +81,8 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
         { urls: 'stun:stun.l.google.com:19302' },
         {
           urls: 'turn:20.0.0.107:3478',
-          username: 'testuser',
-          credential: 'testpassword'
+          username: 'turnuser',
+          credential: '12345678'
         }
       ]
     });
