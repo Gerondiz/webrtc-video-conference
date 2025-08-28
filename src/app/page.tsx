@@ -1,18 +1,23 @@
 // src/app/page.tsx
 'use client';
 
-import React from 'react';
-import Login from '@/components/LoginSimple';
+import { useRouter } from 'next/navigation';
 
-export default function HomePage() {
-  // const handleLogin = () => {
-  //   console.log('User logged in successfully');
-  // };
+export default function StartPage() {
+  const router = useRouter();
+
+  // Обработчик нажатия кнопки
+  const handleNavigateToLogin = () => {
+    router.push('/login'); // Переход на страницу Login
+  };
 
   return (
     <div>
-      {/* <Login onLogin={handleLogin} /> */}
-      <Login/>
+      {/* Поле ввода */}
+      <input type="text" placeholder="Enter something..." />
+
+      {/* Кнопка для перехода */}
+      <button onClick={handleNavigateToLogin}>Go to Login</button>
     </div>
   );
 }
