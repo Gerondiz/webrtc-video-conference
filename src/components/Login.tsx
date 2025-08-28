@@ -1,12 +1,12 @@
 // src/components/Login.tsx
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import InputField from '@/components/ui/InputField';
-import Button from '@/components/ui/Button';
-import { useRouter } from 'next/navigation';
-import { generateUsername } from '@/lib/utils';
-import { createRoom, joinRoom } from '@/lib/api';
+import React, { useState } from "react";
+import InputField from "@/components/ui/InputField";
+import Button from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+import { generateUsername } from "@/lib/utils";
+import { createRoom, joinRoom } from "@/lib/api";
 
 interface LoginProps {
   onLogin: () => void; // Callback для обработки успешного входа
@@ -14,11 +14,12 @@ interface LoginProps {
 
 export default function Login({ onLogin }: LoginProps) {
   const [username, setUsername] = useState(generateUsername());
-  const [roomId, setRoomId] = useState('');
+  const [roomId, setRoomId] = useState("");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const router = useRouter();
 
+  // Функция для создания новой комнаты
   const handleCreateRoom = async () => {
     setIsCreatingRoom(true);
     try {
@@ -27,19 +28,20 @@ export default function Login({ onLogin }: LoginProps) {
         router.push(`/room/${data.roomId}?username=${username}`);
         onLogin();
       } else {
-        alert('Failed to create room');
+        alert("Failed to create room");
       }
     } catch (error) {
-      console.error('Error creating room:', error);
-      alert('Error creating room');
+      console.error("Error creating room:", error);
+      alert("Error creating room");
     } finally {
       setIsCreatingRoom(false);
     }
   };
 
+  // Функция для присоединения к существующей комнате
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
-      alert('Please enter a room ID');
+      alert("Please enter a room ID");
       return;
     }
 
@@ -50,11 +52,11 @@ export default function Login({ onLogin }: LoginProps) {
         router.push(`/room/${roomId}?username=${username}`);
         onLogin();
       } else {
-        alert('Room not found or invalid');
+        alert("Room not found or invalid");
       }
     } catch (error) {
-      console.error('Error joining room:', error);
-      alert('Error joining room');
+      console.error("Error joining room:", error);
+      alert("Error joining room");
     } finally {
       setIsJoiningRoom(false);
     }
@@ -68,6 +70,7 @@ export default function Login({ onLogin }: LoginProps) {
           href="/check-turn"
           className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           title="Check TURN server"
+          aria-label="Check TURN server"
         >
           Check TURN
         </Button>
@@ -80,10 +83,13 @@ export default function Login({ onLogin }: LoginProps) {
 
         {/* Username Input */}
         <InputField
+          id="username" // Уникальный ID
+          name="username" // Имя для формы
           label="Your Name"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your name"
+          autoComplete="name" // Включаем автозаполнение
         />
 
         {/* Create Room Button */}
@@ -91,8 +97,9 @@ export default function Login({ onLogin }: LoginProps) {
           onClick={handleCreateRoom}
           disabled={isCreatingRoom}
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+          aria-disabled={isCreatingRoom} // Улучшение доступности
         >
-          {isCreatingRoom ? 'Creating Room...' : 'Create New Room'}
+          {isCreatingRoom ? "Creating Room..." : "Create New Room"}
         </Button>
 
         {/* Separator */}
@@ -104,6 +111,8 @@ export default function Login({ onLogin }: LoginProps) {
 
         {/* Room ID Input */}
         <InputField
+          id="roomId" // Добавляем уникальный ID
+          name="roomId" // Добавляем имя
           label="Room ID"
           value={roomId}
           onChange={(e) => setRoomId(e.target.value.toUpperCase())}
@@ -115,8 +124,9 @@ export default function Login({ onLogin }: LoginProps) {
           onClick={handleJoinRoom}
           disabled={isJoiningRoom}
           className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+          aria-disabled={isJoiningRoom} // Улучшение доступности
         >
-          {isJoiningRoom ? 'Joining Room...' : 'Join Existing Room'}
+          {isJoiningRoom ? "Joining Room..." : "Join Existing Room"}
         </Button>
 
         <p className="text-center text-gray-500 text-sm mt-6">

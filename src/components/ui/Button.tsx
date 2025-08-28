@@ -10,6 +10,7 @@ interface ButtonProps {
   href?: string; // Для обработки ссылок
   className?: string;
   disabled?: boolean;
+  autoComplete?: string;
 }
 
 export default function Button({ children, onClick, title, href, className, disabled }: ButtonProps) {
