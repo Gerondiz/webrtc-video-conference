@@ -83,3 +83,10 @@ export interface ChatMessageData {
 export interface ErrorMessage {
   message: string;
 }
+
+//build version
+export interface RoomResponse {
+  success: boolean;
+  roomId?: string;
+  message?: string;
+}

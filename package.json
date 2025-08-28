@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "axios": "^1.11.0",
     "lucide-react": "^0.541.0",
     "next": "15.5.0",
     "react": "19.1.0",
@@ -25,5 +26,4 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   }
-  
 }
