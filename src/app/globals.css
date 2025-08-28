@@ -1,8 +1,6 @@
 /*global.css*/
 @import "tailwindcss";
 
-/* global.css */
-
 /* Импорты Tailwind CSS */
 @tailwind base;
 @tailwind components;
@@ -10,35 +8,74 @@
 
 /* Глобальные переменные */
 :root {
-  --foreground-rgb: 0, 0, 0; /* Черный текст */
-  --background-start-rgb: 214, 219, 220; /* Светло-серый фон */
-  --background-end-rgb: 255, 255, 255; /* Белый фон */
+  --foreground-rgb-light: 0, 0, 0; /* Черный текст для светлой темы */
+  --background-start-rgb-light: 214, 219, 220; /* Светло-серый фон для светлой темы */
+  --background-end-rgb-light: 255, 255, 255; /* Белый фон для светлой темы */
+  --primary-button-light: 18, 147, 216; /* Синий для кнопок светлой темы */
+  --secondary-button-light: 34, 197, 94; /* Зеленый для кнопок светлой темы */
+
+  --foreground-rgb-dark: 255, 255, 255; /* Белый текст для темной темы */
+  --background-start-rgb-dark: 30, 30, 30; /* Темно-серый фон для темной темы */
+  --background-end-rgb-dark: 0, 0, 0; /* Черный фон для темной темы */
+  --primary-button-dark: 13, 148, 187; /* Темно-синий для кнопок темной темы */
+  --secondary-button-dark: 21, 128, 61; /* Темно-зеленый для кнопок темной темы */
 }
 
-/* Убираем медиа-запрос для темной темы */
+/* Светлая тема по умолчанию */
 body {
-  color: rgb(var(--foreground-rgb)); /* Цвет текста */
+  color: rgb(var(--foreground-rgb-light));
   background: linear-gradient(
       to bottom,
       transparent,
-      rgb(var(--background-end-rgb))
+      rgb(var(--background-end-rgb-light))
     )
-    rgb(var(--background-start-rgb)); /* Фон */
+    rgb(var(--background-start-rgb-light));
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
-/* Стили для полей ввода и кнопок */
-input,
-textarea,
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+  body {
+    color: rgb(var(--foreground-rgb-dark));
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgb(var(--background-end-rgb-dark))
+      )
+      rgb(var(--background-start-rgb-dark));
+  }
+}
+
+/* Общие стили для кнопок */
 button {
-  color: rgb(var(--foreground-rgb)); /* Цвет текста */
-  background-color: rgb(var(--background-end-rgb)); /* Фон */
-  border: 1px solid rgba(0, 0, 0, 0.1); /* Легкая граница */
+  color: inherit;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+/* Стили для полей ввода */
+input,
+textarea {
+  color: inherit;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 8px;
   border-radius: 4px;
   font-family: inherit;
+  width: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  input,
+  textarea {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 /* Стили для скроллбара */
@@ -58,20 +95,17 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
-/* Стили для скроллбара */
-::-webkit-scrollbar {
-  width: 8px;
-}
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
+  ::-webkit-scrollbar-thumb {
+    background: #444;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
 }
