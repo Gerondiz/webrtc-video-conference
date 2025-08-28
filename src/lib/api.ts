@@ -1,5 +1,4 @@
 // src/lib/api.ts
-'use client';
 import axios, { AxiosInstance } from 'axios';
 
 const createApiClient = (): AxiosInstance => {

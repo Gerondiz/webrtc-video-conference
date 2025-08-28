@@ -1,5 +1,4 @@
 // src/lib/utils.ts
-'use client';
 import { MediaDevicesStatus } from '@/types';
 
 export const generateUsername = (): string => {

@@ -1,6 +1,4 @@
 // src/types.ts
-'use client';
-
 export interface RemoteStream {
   userId: string;
   username: string;
