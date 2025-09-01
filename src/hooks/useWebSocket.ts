@@ -85,7 +85,6 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
           if (handler) {
             handler(message.data);
           }
-
           setMessages((prev) => [...prev, message]);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error, event.data);
