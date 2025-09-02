@@ -1,17 +1,19 @@
+// src/app/layout.tsx
 'use client';
 import "./globals.css";
-
+import { MediaStreamProvider } from '@/contexts/MediaStreamContext';
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-     >
-        {children}
+      <body>
+        <MediaStreamProvider>
+          {children}
+        </MediaStreamProvider>
       </body>
     </html>
   );

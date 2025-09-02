@@ -1,3 +1,4 @@
+//components/RoomPage/ConnectionStatus.ts
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
 

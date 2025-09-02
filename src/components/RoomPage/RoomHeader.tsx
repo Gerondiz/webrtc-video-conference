@@ -1,3 +1,4 @@
+//components/RoomPage/RoomHeader
 import React from 'react';
 import {
   Mic,
@@ -6,7 +7,7 @@ import {
   VideoOff,
   Users,
   PhoneOff,
-  Settings,
+  // Settings,
   Wifi,
   WifiOff,
 } from 'lucide-react';
@@ -17,7 +18,7 @@ interface RoomHeaderProps {
   onLeave: () => void;
   onToggleMic: () => void;
   onToggleCamera: () => void;
-  onShowDeviceSelector: () => void;
+  // onShowDeviceSelector: () => void;
 }
 
 export const RoomHeader: React.FC<RoomHeaderProps> = ({
@@ -25,7 +26,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
   onLeave,
   onToggleMic,
   onToggleCamera,
-  onShowDeviceSelector,
+  // onShowDeviceSelector,
 }) => {
   const {
     users,
@@ -82,13 +83,13 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
         >
           {isCameraOff ? <VideoOff size={20} /> : <Video size={20} />}
         </button>
-        <button
+        {/* <button
           onClick={onShowDeviceSelector}
           className="p-2 rounded-full bg-gray-700 hover:bg-gray-600"
           title="Device settings"
         >
           <Settings size={20} />
-        </button>
+        </button> */}
         <button
           onClick={onLeave}
           className="p-2 rounded-full bg-red-600 hover:bg-red-700"

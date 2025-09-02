@@ -1,3 +1,4 @@
+//components/RoomPage/InitializationOverlay
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
 
@@ -5,14 +6,14 @@ interface InitializationOverlayProps {
   isInitializing: boolean;
   connectionStatus: string;
   onRetry: () => void;
-  onShowDeviceSelector: () => void;
+  // onShowDeviceSelector: () => void;
 }
 
 export const InitializationOverlay: React.FC<InitializationOverlayProps> = ({
   isInitializing,
   connectionStatus,
-  onRetry,
-  onShowDeviceSelector,
+  // onRetry,
+  // onShowDeviceSelector,
 }) => {
   if (!isInitializing) return null;
 
@@ -32,7 +33,7 @@ export const InitializationOverlay: React.FC<InitializationOverlayProps> = ({
           {connectionStatus === 'error' && 'Connection failed'}
           {connectionStatus === 'need-devices' && 'No media devices found'}
         </p>
-        {connectionStatus === 'need-devices' && (
+        {/* {connectionStatus === 'need-devices' && (
           <button
             onClick={onShowDeviceSelector}
             className="bg-blue-500 text-white px-4 py-2 rounded"
@@ -48,7 +49,7 @@ export const InitializationOverlay: React.FC<InitializationOverlayProps> = ({
             <RefreshCw size={16} className="mr-2" />
             Try Again
           </button>
-        )}
+        )} */}
       </div>
     </div>
   );

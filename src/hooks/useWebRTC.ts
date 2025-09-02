@@ -29,20 +29,20 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const checkMediaDevices = useCallback(async (): Promise<MediaDevicesStatus> => {
     try {
       // Сначала запрашиваем разрешение на доступ к устройствам
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: true, 
-        video: false 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
       });
-      
+
       // Останавливаем поток после получения разрешения
       stream.getTracks().forEach(track => track.stop());
-      
+
       // Теперь получаем список устройств с метками
       const devices = await navigator.mediaDevices.enumerateDevices();
-      
+
       const hasMicrophone = devices.some(device => device.kind === 'audioinput' && device.deviceId !== '');
       const hasCamera = devices.some(device => device.kind === 'videoinput' && device.deviceId !== '');
-      
+
       setDevicesStatus({ hasCamera, hasMicrophone });
       return { hasCamera, hasMicrophone };
     } catch (error) {
@@ -58,14 +58,18 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       console.log('Devices status:', devicesStatus);
 
       const constraints: MediaStreamConstraints = {
-        audio: devicesStatus.hasMicrophone ? 
+        audio: devicesStatus.hasMicrophone ?
           (deviceIds?.audio ? { deviceId: deviceIds.audio } : true) : false,
-        video: devicesStatus.hasCamera ? 
+        video: devicesStatus.hasCamera ?
           (deviceIds?.video ? { deviceId: deviceIds.video } : true) : false
       };
 
+      // Проверяем, есть ли уже активный поток
+      if (localStream.current) {
+        localStream.current.getTracks().forEach(track => track.stop());
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
       localStream.current = stream;
       return stream;
     } catch (error) {
@@ -138,7 +142,7 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     const pc = createPeerConnection(userId);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    
+
     return offer;
   }, [createPeerConnection]);
 
@@ -146,10 +150,10 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const handleOffer = useCallback(async (userId: string, offer: RTCSessionDescriptionInit) => {
     const pc = createPeerConnection(userId);
     await pc.setRemoteDescription(offer);
-    
+
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
-    
+
     return answer;
   }, [createPeerConnection]);
 
@@ -204,10 +208,10 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
       localStream.current.getTracks().forEach(track => track.stop());
       localStream.current = null;
     }
-    
+
     peerConnections.current.forEach(pc => pc.close());
     peerConnections.current.clear();
-    
+
     dataChannels.current.clear();
   }, []);
 

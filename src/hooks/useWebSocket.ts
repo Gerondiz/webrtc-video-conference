@@ -9,7 +9,6 @@ interface UseWebSocketReturn {
   sendMessage: (message: WebSocketMessage) => boolean;
   addMessageHandler: <T = unknown>(type: string, handler: (data: T) => void) => void;
   removeMessageHandler: (type: string) => void;
-  messages: WebSocketMessage[];
   disconnect: () => void;
   connect: () => void;
   error: string | null;
@@ -19,24 +18,32 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
   const ws = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [messages, setMessages] = useState<WebSocketMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const messageHandlers = useRef<Map<string, (data: unknown) => void>>(
-    new Map()
-  );
+  const messageHandlers = useRef<Map<string, (data: unknown) => void>>(new Map());
   const isMounted = useRef(true);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+  const isConnectingRef = useRef(false);
+
+  // Синхронизируем ref с состоянием
+  useEffect(() => {
+    isConnectingRef.current = isConnecting;
+  }, [isConnecting]);
 
   const connect = useCallback(() => {
-    if (!isMounted.current || isConnecting) return;
+    // Защита от повторного подключения
+    if (!isMounted.current || isConnectingRef.current || isConnected) return;
 
+    // Очищаем предыдущие попытки переподключения
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Очищаем предыдущее соединение
     if (ws.current) {
-      ws.current.onopen = null;
-      ws.current.onclose = null;
-      ws.current.onerror = null;
-      ws.current.onmessage = null;
-      if (ws.current.readyState === WebSocket.OPEN) {
-        ws.current.close();
-      }
+      ws.current.close();
       ws.current = null;
     }
 
@@ -53,25 +60,41 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
         setIsConnected(true);
         setIsConnecting(false);
         setError(null);
+        reconnectAttempts.current = 0;
       };
 
       ws.current.onclose = (event) => {
         if (!isMounted.current) return;
-        console.log(`WebSocket disconnected: ${event.code} ${event.reason}`);
-        setIsConnected(false);
-        setIsConnecting(false);
-
+        console.log(`[WS] Closed: code=${event.code}, reason=${event.reason}, wasClean=${event.wasClean}`);
+        
         if (event.code !== 1000) {
-          setError(
-            `Connection closed: ${event.code} ${event.reason || 'No reason provided'}`
-          );
+          console.log(`WebSocket disconnected: ${event.code} ${event.reason}`);
+          setIsConnected(false);
+          setIsConnecting(false);
+          
+          if (reconnectAttempts.current < maxReconnectAttempts) {
+            reconnectAttempts.current++;
+            const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);
+            console.log(`Reconnecting in ${timeout}ms (attempt ${reconnectAttempts.current})`);
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              if (isMounted.current) {
+                connect();
+              }
+            }, timeout);
+          } else {
+            setError('Maximum reconnection attempts reached');
+          }
+        } else {
+          console.log('Normal closure - initiated by client');
+          setIsConnected(false);
+          setIsConnecting(false);
         }
       };
 
       ws.current.onerror = (event) => {
         if (!isMounted.current) return;
         console.error('WebSocket error:', event);
-        setIsConnecting(false);
         setError('WebSocket connection error');
       };
 
@@ -85,7 +108,6 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
           if (handler) {
             handler(message.data);
           }
-          setMessages((prev) => [...prev, message]);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error, event.data);
         }
@@ -95,7 +117,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
       setIsConnecting(false);
       setError(`Failed to create WebSocket: ${(error as Error).message}`);
     }
-  }, [url, isConnecting]);
+  }, [url, isConnected]);
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -116,35 +138,49 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     }
   }, []);
 
-  const addMessageHandler = useCallback(
-    <T = unknown>(type: string, handler: (data: T) => void) => {
-      messageHandlers.current.set(type, handler as (data: unknown) => void);
-    },
-    []
-  );
+  const addMessageHandler = useCallback(<T = unknown>(type: string, handler: (data: T) => void) => {
+    messageHandlers.current.set(type, handler as (data: unknown) => void);
+  }, []);
 
   const removeMessageHandler = useCallback((type: string) => {
     messageHandlers.current.delete(type);
   }, []);
 
   const disconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
     if (ws.current) {
       ws.current.close(1000, 'Client disconnected');
       ws.current = null;
     }
+
     setIsConnected(false);
     setIsConnecting(false);
     setError(null);
+    reconnectAttempts.current = 0;
   }, []);
+
+  // Стабилизируем connect
+  const stableConnect = useCallback(connect, [connect]);
 
   useEffect(() => {
     isMounted.current = true;
-    connect();
+    
+    // Подключаемся при монтировании
+    stableConnect();
+
     return () => {
       isMounted.current = false;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [stableConnect, disconnect]);
 
   return {
     isConnected,
@@ -152,9 +188,8 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     sendMessage,
     addMessageHandler,
     removeMessageHandler,
-    messages,
     disconnect,
-    connect,
+    connect: stableConnect,
     error,
   };
 };

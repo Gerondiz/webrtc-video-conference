@@ -1,3 +1,4 @@
+//components/RoomPage/DeviceSelector
 import React, { useState, useEffect } from 'react';
 import { MediaDeviceInfo } from '@/types';
 
