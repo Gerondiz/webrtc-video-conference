@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import RoomHeader from '@/components/RoomPage/RoomHeader';
-import { ConnectionStatus } from '@/components/RoomPageConnectionStatus';
 import VideoGrid from '@/components/RoomPage/VideoGrid';
 import ChatPanel from '@/components/RoomPage/ChatPanel';
 

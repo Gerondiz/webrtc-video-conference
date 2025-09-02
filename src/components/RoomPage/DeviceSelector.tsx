@@ -1,5 +1,6 @@
-//components/RoomPage/DeviceSelector
-import React, { useState, useEffect } from 'react';
+// src/components/RoomPage/DeviceSelector.tsx
+'use client';
+import { useState, useEffect } from 'react';
 import { MediaDeviceInfo } from '@/types';
 
 interface DeviceSelectorProps {
@@ -7,10 +8,7 @@ interface DeviceSelectorProps {
   onCancel: () => void;
 }
 
-export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
-  onDevicesSelected,
-  onCancel,
-}) => {
+export default function DeviceSelector({ onDevicesSelected, onCancel }: DeviceSelectorProps) {
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedVideo, setSelectedVideo] = useState('');
@@ -89,4 +87,4 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
       </div>
     </div>
   );
-};
+}
