@@ -89,3 +89,16 @@ export interface RoomResponse {
   roomId?: string;
   message?: string;
 }
+
+export interface SignalingMessage {
+  type: string;
+  roomId: string;
+  userId: string;
+  data?: WebRTCSignal | any;
+}
+
+export interface UserMedia {
+  stream: MediaStream | null;
+  hasCamera: boolean;
+  hasMicrophone: boolean;
+}

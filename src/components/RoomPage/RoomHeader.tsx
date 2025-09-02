@@ -1,103 +1,85 @@
-//components/RoomPage/RoomHeader
-import React from 'react';
-import {
-  Mic,
-  MicOff,
-  Video,
-  VideoOff,
-  Users,
-  PhoneOff,
-  // Settings,
-  Wifi,
-  WifiOff,
-} from 'lucide-react';
-import { useRoomStore } from '../../stores/useRoomStore';
+// src/components/RoomPage/RoomHeader.tsx
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Settings } from 'lucide-react';
+import { useMediaStream } from '@/contexts/MediaStreamContext';
 
 interface RoomHeaderProps {
   roomId: string;
-  onLeave: () => void;
   onToggleMic: () => void;
-  onToggleCamera: () => void;
-  // onShowDeviceSelector: () => void;
+  onToggleVideo: () => void;
+  onLeaveRoom: () => void;
+  onSettings: () => void;
 }
 
-export const RoomHeader: React.FC<RoomHeaderProps> = ({
+export default function RoomHeader({
   roomId,
-  onLeave,
   onToggleMic,
-  onToggleCamera,
-  // onShowDeviceSelector,
-}) => {
-  const {
-    users,
-    wsConnected,  // Используем wsConnected вместо isConnected
-    wsConnecting, // Используем wsConnecting вместо isConnecting
-    isMicMuted,
-    isCameraOff,
-    localStream,
-  } = useRoomStore();
+  onToggleVideo,
+  onLeaveRoom,
+  onSettings,
+}: RoomHeaderProps) {
+  const { stream: localStream } = useMediaStream();
   
+  // Получаем текущее состояние микрофона и камеры из потока
+  const isMicMuted = localStream 
+    ? !localStream.getAudioTracks().some(track => track.enabled)
+    : true;
+    
+  const isVideoMuted = localStream 
+    ? !localStream.getVideoTracks().some(track => track.enabled)
+    : true;
+
   return (
-    <header className="p-4 bg-gray-800 flex justify-between items-center">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
-        <h1 className="text-xl font-semibold">Room: {roomId}</h1>
-        <div className="flex items-center space-x-2">
-          <Users size={20} />
-          <span>{users.length + 1} users</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          {wsConnected  ? (
-            <Wifi size={20} className="text-green-400" />
-          ) : wsConnecting ? (
-            <Wifi size={20} className="text-yellow-400 animate-pulse" />
-          ) : (
-            <WifiOff size={20} className="text-red-400" />
-          )}
-          <span>
-            {wsConnected
-              ? 'Connected'
-              : wsConnecting
-              ? 'Connecting...'
-              : 'Disconnected'}
-          </span>
-        </div>
+        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
+          Room: {roomId}
+        </h1>
       </div>
-      <div className="flex space-x-2">
+
+      <div className="flex items-center space-x-2">
         <button
           onClick={onToggleMic}
           className={`p-2 rounded-full ${
-            isMicMuted ? 'bg-red-500' : 'bg-gray-700 hover:bg-gray-600'
+            isMicMuted
+              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+              : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
           }`}
           title={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
           disabled={!localStream}
         >
           {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
+
         <button
-          onClick={onToggleCamera}
+          onClick={onToggleVideo}
           className={`p-2 rounded-full ${
-            isCameraOff ? 'bg-red-500' : 'bg-gray-700 hover:bg-gray-600'
+            isVideoMuted
+              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
+              : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
           }`}
-          title={isCameraOff ? 'Turn on camera' : 'Turn off camera'}
+          title={isVideoMuted ? 'Enable video' : 'Disable video'}
           disabled={!localStream}
         >
-          {isCameraOff ? <VideoOff size={20} /> : <Video size={20} />}
+          {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
         </button>
-        {/* <button
-          onClick={onShowDeviceSelector}
-          className="p-2 rounded-full bg-gray-700 hover:bg-gray-600"
-          title="Device settings"
+
+        <button
+          onClick={onSettings}
+          className="p-2 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+          title="Settings"
+          disabled={!localStream}
         >
           <Settings size={20} />
-        </button> */}
+        </button>
+
         <button
-          onClick={onLeave}
-          className="p-2 rounded-full bg-red-600 hover:bg-red-700"
-          title="Leave call"
+          onClick={onLeaveRoom}
+          className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
+          title="Leave room"
         >
           <PhoneOff size={20} />
         </button>
       </div>
     </header>
   );
-};
+}

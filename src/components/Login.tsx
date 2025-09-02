@@ -18,29 +18,26 @@ export default function Login({ onLogin }: LoginProps) {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const router = useRouter();
+  
   const { 
-    isInitializing: isMediaInitializing, 
-    mediaError,
+    isInitializing, 
+    error: mediaError,
     devicesStatus,
-    localStream,
-    initMedia
-  } = useMediaStream(); // Вызов хука на верхнем уровне компонента
+    stream: localStream,
+    initMedia,
+    hasAttemptedInitialization
+  } = useMediaStream();
 
-  // Проверяем, готов ли медиапоток при монтировании
+  // Инициализируем медиа только один раз при загрузке компонента
   useEffect(() => {
-    if (!isMediaInitializing && !localStream && (devicesStatus.hasCamera || devicesStatus.hasMicrophone)) {
+    if (!hasAttemptedInitialization && !isInitializing) {
       initMedia();
     }
-  }, [isMediaInitializing, localStream, devicesStatus, initMedia]);
+  }, [hasAttemptedInitialization, isInitializing, initMedia]);
 
   const handleCreateRoom = async () => {
     setIsCreatingRoom(true);
     try {
-      // Проверяем, что медиапоток готов
-      if (!localStream) {
-        throw new Error('Media stream is not ready');
-      }
-      
       const data = await createRoom(username);
       if (data.success) {
         router.push(`/room/${data.roomId}?username=${username}`);
@@ -50,7 +47,7 @@ export default function Login({ onLogin }: LoginProps) {
       }
     } catch (error) {
       console.error("Error creating room:", error);
-      alert("Please allow camera/microphone access before creating a room");
+      alert("Error creating room");
     } finally {
       setIsCreatingRoom(false);
     }
@@ -63,11 +60,6 @@ export default function Login({ onLogin }: LoginProps) {
     }
     setIsJoiningRoom(true);
     try {
-      // Проверяем, что медиапоток готов
-      if (!localStream) {
-        throw new Error('Media stream is not ready');
-      }
-      
       const data = await joinRoom(roomId, username);
       if (data.success) {
         router.push(`/room/${roomId}?username=${username}`);
@@ -77,13 +69,16 @@ export default function Login({ onLogin }: LoginProps) {
       }
     } catch (error) {
       console.error("Error joining room:", error);
-      alert("Please allow camera/microphone access before joining a room");
+      alert("Error joining room");
     } finally {
       setIsJoiningRoom(false);
     }
   };
 
-  if (isMediaInitializing) {
+  // Проверяем, есть ли медиаустройства
+  const hasMediaDevices = devicesStatus.hasCamera || devicesStatus.hasMicrophone;
+
+  if (isInitializing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -108,16 +103,32 @@ export default function Login({ onLogin }: LoginProps) {
         </Button>
       </div>
       
-      {mediaError && (
-        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
-          {mediaError}
-        </div>
-      )}
+      {/* Сообщения о состоянии медиа */}
+      <div className="absolute top-4 left-4 max-w-md">
+        {mediaError && (
+          <div className="mb-2 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+            {mediaError}
+            <button 
+              onClick={initMedia}
+              className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-sm"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
+        {!hasMediaDevices && !mediaError && (
+          <div className="mb-2 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+            No media devices detected. You can still join for audio-only communication.
+          </div>
+        )}
+      </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">
           WebRTC Video Conference
         </h1>
+        
         {/* Username Input */}
         <InputField
           id="username"
@@ -128,15 +139,17 @@ export default function Login({ onLogin }: LoginProps) {
           placeholder="Enter your name"
           autoComplete="name"
         />
+        
         {/* Create Room Button */}
         <Button
           onClick={handleCreateRoom}
-          disabled={isCreatingRoom || !localStream}
+          disabled={isCreatingRoom}
           className="w-full bg-[rgb(var(--primary-button-light))] text-white py-3 px-4 rounded-lg hover:bg-[rgb(var(--primary-button-light)/0.9)] dark:bg-[rgb(var(--primary-button-dark))] dark:hover:bg-[rgb(var(--primary-button-dark)/0.9)] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-          aria-disabled={isCreatingRoom || !localStream}
+          aria-disabled={isCreatingRoom}
         >
           {isCreatingRoom ? "Creating Room..." : "Create New Room"}
         </Button>
+        
         {/* Separator */}
         <div className="relative flex items-center my-6">
           <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
@@ -145,6 +158,7 @@ export default function Login({ onLogin }: LoginProps) {
           </span>
           <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
         </div>
+        
         {/* Room ID Input */}
         <InputField
           id="roomId"
@@ -154,15 +168,17 @@ export default function Login({ onLogin }: LoginProps) {
           onChange={(e) => setRoomId(e.target.value.toUpperCase())}
           placeholder="Enter room ID"
         />
+        
         {/* Join Room Button */}
         <Button
           onClick={handleJoinRoom}
-          disabled={isJoiningRoom || !localStream}
+          disabled={isJoiningRoom || !roomId.trim()}
           className="w-full bg-[rgb(var(--secondary-button-light))] text-white py-3 px-4 rounded-lg hover:bg-[rgb(var(--secondary-button-light)/0.9)] dark:bg-[rgb(var(--secondary-button-dark))] dark:hover:bg-[rgb(var(--secondary-button-dark)/0.9)] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-          aria-disabled={isJoiningRoom || !localStream}
+          aria-disabled={isJoiningRoom || !roomId.trim()}
         >
           {isJoiningRoom ? "Joining Room..." : "Join Existing Room"}
         </Button>
+        
         <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-6">
           Start or join a video conference room to connect with others
         </p>

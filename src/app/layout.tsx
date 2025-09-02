@@ -1,15 +1,12 @@
 // src/app/layout.tsx
 'use client';
 import "./globals.css";
+// app/layout.tsx
 import { MediaStreamProvider } from '@/contexts/MediaStreamContext';
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body>
         <MediaStreamProvider>
           {children}

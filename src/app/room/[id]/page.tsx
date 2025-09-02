@@ -1,65 +1,75 @@
-// src/app/room/[id]/page.tsx
+// app/room/[id]/page.tsx
 'use client';
-import { useEffect } from 'react';
-import { useRoomConnection } from '@/hooks/useRoomConnection';
-import { useRoomStore } from '@/stores/useRoomStore';
-import { RoomHeader } from '@/components/RoomPage/RoomHeader';
-import { VideoGrid } from '@/components/RoomPage/VideoGrid';
-import { ConnectionStatus } from '@/components/RoomPage/ConnectionStatus';
-import { InitializationOverlay } from '@/components/RoomPage/InitializationOverlay';
-import Chat from '@/components/Chat';
+import { useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useMediaStream } from '@/contexts/MediaStreamContext';
+import RoomHeader from '@/components/RoomPage/RoomHeader';
+import { ConnectionStatus } from '@/components/RoomPageConnectionStatus';
+import VideoGrid from '@/components/RoomPage/VideoGrid';
+import ChatPanel from '@/components/RoomPage/ChatPanel';
 
 export default function RoomPage() {
-  const {
-    roomId,
-    username,
-    initializeRoom,
-    handleSendChatMessage,
-    leaveRoom,
-    retryConnection,
-  } = useRoomConnection();
+  const params = useParams();
+  const router = useRouter();
+  const roomId = params.id as string;
   
-  const {
-    isInitializing,
-    connectionStatus,
-    connectionError,
-    toggleMic,
-    toggleCamera,
-    chatMessages,
-  } = useRoomStore();
+  const { stream: localStream, stopMediaStream } = useMediaStream();
+  const [remoteStreams, setRemoteStreams] = useState([]);
 
-  // Инициализация комнаты при монтировании
-  useEffect(() => {
-    initializeRoom();
-  }, [initializeRoom]);
+  const toggleMic = useCallback(() => {
+    if (localStream) {
+      const audioTracks = localStream.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+    }
+  }, [localStream]);
+
+  const toggleVideo = useCallback(() => {
+    if (localStream) {
+      const videoTracks = localStream.getVideoTracks();
+      videoTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+    }
+  }, [localStream]);
+
+  const leaveRoom = useCallback(() => {
+    // Останавливаем медиапоток
+    stopMediaStream();
+    
+    // Возвращаемся на главную
+    router.push('/');
+  }, [stopMediaStream, router]);
+
+  const openSettings = useCallback(() => {
+    // Логика открытия настроек
+    console.log('Open settings');
+  }, []);
+
+  // Функция для отправки сообщений через WebSocket
+  const sendChatMessage = useCallback((message: any) => {
+    // Здесь будет логика отправки сообщения через WebSocket
+    console.log('Sending message:', message);
+  }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white">
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       <RoomHeader
         roomId={roomId}
-        onLeave={leaveRoom}
         onToggleMic={toggleMic}
-        onToggleCamera={toggleCamera}
+        onToggleVideo={toggleVideo}
+        onLeaveRoom={leaveRoom}
+        onSettings={openSettings}
       />
-      <ConnectionStatus
-        connectionError={connectionError}
-        onRetry={retryConnection}
-      />
-      <div className="flex-1 flex overflow-hidden">
-        <VideoGrid username={username} />
-        <div className="w-80 border-l border-gray-700 flex flex-col">
-          <Chat
-            messages={chatMessages}
-            onSendMessage={handleSendChatMessage}
-            currentUser={username}
-          />
-        </div>
+      
+      <div className="flex flex-1 overflow-hidden">
+        <VideoGrid remoteStreams={remoteStreams} />
+        <ChatPanel 
+          roomId={roomId} 
+          sendMessage={sendChatMessage}
+        />
       </div>
-      <InitializationOverlay
-        isInitializing={isInitializing}
-        connectionStatus={connectionStatus}
-        onRetry={retryConnection}
-      />
     </div>
   );
 }

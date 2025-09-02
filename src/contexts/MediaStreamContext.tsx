@@ -1,127 +1,91 @@
-// src/contexts/MediaStreamContext.tsx
+// contexts/MediaStreamContext.tsx
 'use client';
-
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { checkMediaDevices as checkMediaDevicesUtil } from '@/lib/utils';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { MediaDevicesStatus } from '@/types';
+import { checkMediaDevices, getMediaDevicesWithPermissions } from '@/lib/utils';
 
 interface MediaStreamContextType {
-  localStream: MediaStream | null;
+  stream: MediaStream | null;
   devicesStatus: MediaDevicesStatus;
-  isInitializing: boolean;
-  mediaError: string | null;
   initMedia: () => Promise<void>;
-  reinitMedia: (deviceIds?: { video?: string; audio?: string }) => Promise<void>;
+  stopMediaStream: () => void;
+  isInitializing: boolean;
+  error: string | null;
+  hasAttemptedInitialization: boolean;
 }
 
-const MediaStreamContext = createContext<MediaStreamContextType>({
-  localStream: null,
-  devicesStatus: {
-    hasCamera: false,
-    hasMicrophone: false
-  },
-  isInitializing: true,
-  mediaError: null,
-  initMedia: async () => {},
-  reinitMedia: async () => {}
-});
+const MediaStreamContext = createContext<MediaStreamContextType | undefined>(undefined);
 
-export const MediaStreamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+export const MediaStreamProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const [devicesStatus, setDevicesStatus] = useState<MediaDevicesStatus>({
     hasCamera: false,
-    hasMicrophone: false
+    hasMicrophone: false,
   });
-  const [isInitializing, setIsInitializing] = useState(true);
-  0
-  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasAttemptedInitialization, setHasAttemptedInitialization] = useState(false);
 
-  // Инициализация медиаустройств
   const initMedia = useCallback(async () => {
+    // Если уже инициализируемся или уже пытались и не получилось, не повторяем
+    if (isInitializing || (hasAttemptedInitialization && !stream)) {
+      return;
+    }
+    
     setIsInitializing(true);
-    setMediaError(null);
+    setError(null);
     
     try {
-      // Проверяем доступные устройства
-      const status = await checkMediaDevicesUtil();
+      const status = await checkMediaDevices();
       setDevicesStatus(status);
       
-      // Если есть устройства, запрашиваем доступ
-      if (status.hasCamera || status.hasMicrophone) {
-        const constraints: MediaStreamConstraints = {
-          video: status.hasCamera,
-          audio: status.hasMicrophone
-        };
-        
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        setLocalStream(stream);
+      // Если нет устройств, не пытаемся получить доступ
+      if (!status.hasCamera && !status.hasMicrophone) {
+        setError('No media devices found');
+        setHasAttemptedInitialization(true);
+        return;
       }
-    } catch (error) {
-      console.error('Error initializing media:', error);
-      setMediaError('Could not access camera or microphone. Please check permissions.');
+      
+      const mediaStream = await getMediaDevicesWithPermissions(status);
+      setStream(mediaStream);
+      setHasAttemptedInitialization(true);
+    } catch (err) {
+      setError('Failed to access media devices');
+      console.error('Media initialization error:', err);
+      setHasAttemptedInitialization(true);
     } finally {
       setIsInitializing(false);
     }
-  }, []);
+  }, [isInitializing, hasAttemptedInitialization, stream]);
 
-  // Перезапуск медиа с выбором устройств
-  const reinitMedia = useCallback(async (deviceIds?: { video?: string; audio?: string }) => {
-    setIsInitializing(true);
-    setMediaError(null);
-    
-    try {
-      // Останавливаем текущий поток
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        setLocalStream(null);
-      }
-      
-      // Проверяем доступные устройства
-      const status = await checkMediaDevicesUtil();
-      setDevicesStatus(status);
-      
-      // Если есть устройства, запрашиваем доступ с выбранными ID
-      if (status.hasCamera || status.hasMicrophone) {
-        const constraints: MediaStreamConstraints = {
-          video: deviceIds?.video ? { deviceId: { exact: deviceIds.video } } : status.hasCamera,
-          audio: deviceIds?.audio ? { deviceId: { exact: deviceIds.audio } } : status.hasMicrophone
-        };
-        
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        setLocalStream(stream);
-      }
-    } catch (error) {
-      console.error('Error reinitializing media:', error);
-      setMediaError('Failed to access selected devices');
-    } finally {
-      setIsInitializing(false);
+  const stopMediaStream = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
-  }, [localStream]);
-
-  // Инициализируем медиа при монтировании
-  useEffect(() => {
-    initMedia();
-    
-    // Очистка при размонтировании
-    return () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [initMedia]);
+  }, [stream]);
 
   return (
-    <MediaStreamContext.Provider value={{
-      localStream,
-      devicesStatus,
-      isInitializing,
-      mediaError,
-      initMedia,
-      reinitMedia
-    }}>
+    <MediaStreamContext.Provider
+      value={{
+        stream,
+        devicesStatus,
+        initMedia,
+        stopMediaStream,
+        isInitializing,
+        error,
+        hasAttemptedInitialization,
+      }}
+    >
       {children}
     </MediaStreamContext.Provider>
   );
 };
 
-export const useMediaStream = () => useContext(MediaStreamContext);
+export const useMediaStream = () => {
+  const context = useContext(MediaStreamContext);
+  if (!context) {
+    throw new Error('useMediaStream must be used within a MediaStreamProvider');
+  }
+  return context;
+};
