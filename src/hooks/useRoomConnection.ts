@@ -4,7 +4,6 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { useRoomStore } from '@/stores/useRoomStore';
-import { useMediaStream } from '@/contexts/MediaStreamContext';
 import {
     UserJoinedMessage,
     UserLeftMessage,
@@ -20,7 +19,6 @@ export const useRoomConnection = () => {
     const searchParams = useSearchParams();
     const roomId = params.id;
     const username = searchParams.get('username') || 'User';
-    const { localStream, setLocalStream } = useMediaStream();
     const {
         isConnected,
         isConnecting,
@@ -64,9 +62,7 @@ export const useRoomConnection = () => {
     const {
         setConnectionStatus,
         setConnectionError,
-            setConnectionStatus,
-    setConnectionError,
-        setLocalStream: setRoomLocalStream,
+        setLocalStream,
         addUser,
         removeUser,
         addChatMessage,
