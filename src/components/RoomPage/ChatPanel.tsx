@@ -2,24 +2,14 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, Send } from "lucide-react";
-
-interface ChatMessage {
-  id: string;
-  from: string;
-  text: string;
-  timestamp: Date;
-}
+import { ChatMessage } from '@/types';
 
 interface ChatPanelProps {
   roomId: string;
-  sendMessage?: (message: {
-    type: string;
-    roomId: string;
-    text: string;
-  }) => void;
+  sendMessage?: (text: string) => void; // Изменяем сигнатуру
 }
 
-export default function ChatPanel({ roomId, sendMessage }: ChatPanelProps) {
+export default function ChatPanel({ sendMessage }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,11 +36,7 @@ export default function ChatPanel({ roomId, sendMessage }: ChatPanelProps) {
 
     // Отправка сообщения через WebSocket, если функция предоставлена
     if (sendMessage) {
-      sendMessage({
-        type: "chat-message",
-        roomId,
-        text: newMessage,
-      });
+      sendMessage(newMessage); // Теперь отправляем только текст
     }
 
     setNewMessage("");

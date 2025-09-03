@@ -1,19 +1,27 @@
 // app/room/[id]/page.tsx
 'use client';
 import { useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
+import { useRoomConnection } from '@/hooks/useRoomConnection';
 import RoomHeader from '@/components/RoomPage/RoomHeader';
 import VideoGrid from '@/components/RoomPage/VideoGrid';
 import ChatPanel from '@/components/RoomPage/ChatPanel';
 
 export default function RoomPage() {
-  const params = useParams();
   const router = useRouter();
-  const roomId = params.id as string;
+  const { stream: localStream } = useMediaStream();
+  const {
+    roomId,
+    isConnected,
+    isConnecting,
+    sendChatMessage,
+    leaveRoom,
+  } = useRoomConnection();
+
+  console.log(roomId, "isConnected: ", isConnected, "isConnecting",isConnecting)
   
-  const { stream: localStream, stopMediaStream } = useMediaStream();
-  const [remoteStreams, setRemoteStreams] = useState([]);
+  const [remoteStreams] = useState([]);
 
   const toggleMic = useCallback(() => {
     if (localStream) {
@@ -33,36 +41,30 @@ export default function RoomPage() {
     }
   }, [localStream]);
 
-  const leaveRoom = useCallback(() => {
-    // Останавливаем медиапоток
-    stopMediaStream();
-    
-    // Возвращаемся на главную
+  const handleLeaveRoom = useCallback(() => {
+    leaveRoom();
     router.push('/');
-  }, [stopMediaStream, router]);
+  }, [leaveRoom, router]);
 
   const openSettings = useCallback(() => {
-    // Логика открытия настроек
     console.log('Open settings');
-  }, []);
-
-  // Функция для отправки сообщений через WebSocket
-  const sendChatMessage = useCallback((message: any) => {
-    // Здесь будет логика отправки сообщения через WebSocket
-    console.log('Sending message:', message);
   }, []);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       <RoomHeader
         roomId={roomId}
+        isConnected={isConnected}
+        isConnecting={isConnecting}
         onToggleMic={toggleMic}
         onToggleVideo={toggleVideo}
-        onLeaveRoom={leaveRoom}
+        onLeaveRoom={handleLeaveRoom}
         onSettings={openSettings}
+        userCount={1}
       />
       
       <div className="flex flex-1 overflow-hidden">
+        {/* Убираем передачу localStream, так как VideoGrid использует контекст */}
         <VideoGrid remoteStreams={remoteStreams} />
         <ChatPanel 
           roomId={roomId} 

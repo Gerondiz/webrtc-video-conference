@@ -47,7 +47,7 @@ const initialState = {
   isInitializing: true,
 };
 
-export const useRoomStore = create<RoomState>((set, get) => ({
+export const useRoomStore = create<RoomState>((set) => ({
   ...initialState,
   setWsConnected: (connected) => set({ wsConnected: connected }),
   setWsConnecting: (connecting) => set({ wsConnecting: connecting }),

@@ -90,15 +90,48 @@ export interface RoomResponse {
   message?: string;
 }
 
-export interface SignalingMessage {
-  type: string;
-  roomId: string;
-  userId: string;
-  data?: WebRTCSignal | any;
-}
+// export interface SignalingMessage {
+//   type: string;
+//   roomId: string;
+//   userId: string;
+//   data?: WebRTCSignal | any;
+// }
 
 export interface UserMedia {
   stream: MediaStream | null;
   hasCamera: boolean;
   hasMicrophone: boolean;
+}
+
+// Добавляем к существующим типам
+
+export interface WebSocketMessage {
+  type: string;
+  roomId?: string;
+  username?: string;
+  text?: string;
+  timestamp?: string;
+  user?: string;
+}
+
+export interface JoinRoomMessage {
+  type: 'join-room';
+  roomId: string;
+  username: string;
+}
+
+export interface LeaveRoomMessage {
+  type: 'leave-room';
+  roomId: string;
+  username: string;
+}
+
+export interface UserJoinedMessage {
+  type: 'user-joined';
+  user: string;
+}
+
+export interface UserLeftMessage {
+  type: 'user-left';
+  user: string;
 }

@@ -17,12 +17,15 @@ export const delay = (ms: number): Promise<void> => {
 
 export async function checkMediaDevices(): Promise<MediaDevicesStatus> {
   try {
+    // Запрашиваем разрешение на доступ к устройствам, чтобы получить полную информацию
+    await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    
     // Получаем список всех доступных устройств
     const devices = await navigator.mediaDevices.enumerateDevices();
 
     // Проверяем наличие камер и микрофонов
-    const hasCamera = devices.some(device => device.kind === 'videoinput');
-    const hasMicrophone = devices.some(device => device.kind === 'audioinput');
+    const hasCamera = devices.some(device => device.kind === 'videoinput' && device.deviceId !== '');
+    const hasMicrophone = devices.some(device => device.kind === 'audioinput' && device.deviceId !== '');
 
     // Выводим результаты проверки
     if (hasCamera && hasMicrophone) {
@@ -38,31 +41,33 @@ export async function checkMediaDevices(): Promise<MediaDevicesStatus> {
     return { hasCamera, hasMicrophone };
   } catch (error) {
     console.error('Ошибка при проверке устройств:', error);
-    throw error;
+    
+    // Если пользователь отказал в доступе, все равно пытаемся определить устройства
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasCamera = devices.some(device => device.kind === 'videoinput');
+      const hasMicrophone = devices.some(device => device.kind === 'audioinput');
+      
+      return { hasCamera, hasMicrophone };
+    } catch (err) {
+      console.error('Не удалось получить список устройств:', err);
+      return { hasCamera: false, hasMicrophone: false };
+    }
   }
 }
 
-export async function getMediaDevicesWithPermissions(devicesStatus: MediaDevicesStatus): Promise<MediaStream | null> {
+export async function getMediaDevicesWithPermissions(constraints: MediaStreamConstraints): Promise<MediaStream> {
   try {
-    console.log('Статус устройств:', devicesStatus);
-
-    // Если нужно запросить доступ к медиаустройствам
-    const constraints: MediaStreamConstraints = {
-      audio: devicesStatus.hasMicrophone,
-      video: devicesStatus.hasCamera,
-    };
-
-    if (devicesStatus.hasCamera || devicesStatus.hasMicrophone) {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Доступ к медиапотоку получен:', stream);
-      return stream;
-    } else {
-      console.log('Нет доступных устройств для захвата медиа.');
-      return null;
-    }
+    console.log('Запрашиваем доступ с constraints:', constraints);
+    
+    // Запрашиваем доступ к медиаустройствам
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    console.log('Доступ к медиапотоку получен:', stream);
+    
+    return stream;
   } catch (error) {
-    console.error('Ошибка:', error);
-    return null;
+    console.error('Ошибка при получении доступа к медиаустройствам:', error);
+    throw new Error('Не удалось получить доступ к медиаустройствам');
   }
 }
 
@@ -70,9 +75,11 @@ export async function getMediaDevicesWithPermissions(devicesStatus: MediaDevices
  * Проверяет, поддерживается ли WebRTC в браузере
  */
 export const checkWebRTCSupport = (): boolean => {
-  return !!(navigator.mediaDevices && 
-            'getUserMedia' in navigator.mediaDevices && 
-            'RTCPeerConnection' in window);
+  return !!(
+    navigator.mediaDevices && 
+    'getUserMedia' in navigator.mediaDevices && 
+    'RTCPeerConnection' in window
+  );
 };
 
 /**
@@ -123,4 +130,32 @@ export const testTURNConnection = async (
       reject(error);
     }
   });
+};
+
+/**
+ * Получает список всех доступных медиаустройств
+ */
+export const getAvailableDevices = async (): Promise<{
+  videoDevices: MediaDeviceInfo[];
+  audioDevices: MediaDeviceInfo[];
+}> => {
+  try {
+    // Сначала запрашиваем разрешение, чтобы получить полную информацию об устройствах
+    await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    
+    const videoDevices = devices.filter(device => 
+      device.kind === 'videoinput' && device.deviceId !== ''
+    );
+    
+    const audioDevices = devices.filter(device => 
+      device.kind === 'audioinput' && device.deviceId !== ''
+    );
+    
+    return { videoDevices, audioDevices };
+  } catch (error) {
+    console.error('Ошибка при получении списка устройств:', error);
+    throw error;
+  }
 };

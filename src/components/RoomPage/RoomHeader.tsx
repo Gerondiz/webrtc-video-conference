@@ -4,22 +4,24 @@ import { useMediaStream } from '@/contexts/MediaStreamContext';
 
 interface RoomHeaderProps {
   roomId: string;
+  isConnected: boolean;
+  isConnecting: boolean;
   onToggleMic: () => void;
   onToggleVideo: () => void;
   onLeaveRoom: () => void;
   onSettings: () => void;
-  userCount: number;
-  connectionStatus: 'connected' | 'connecting' | 'disconnected';
+  userCount:number
 }
 
 export default function RoomHeader({
   roomId,
+  isConnected,
+  isConnecting,
   onToggleMic,
   onToggleVideo,
   onLeaveRoom,
   onSettings,
-  userCount,
-  connectionStatus,
+  userCount
 }: RoomHeaderProps) {
   const { stream: localStream } = useMediaStream();
   
@@ -43,17 +45,17 @@ export default function RoomHeader({
           <span>{userCount} users</span>
         </div>
         <div className="flex items-center space-x-2">
-          {connectionStatus === 'connected' ? (
+          {isConnected === true ? (
             <Wifi size={20} className="text-green-400" />
-          ) : connectionStatus === 'connecting' ? (
+          ) : isConnecting === true ? (
             <Wifi size={20} className="text-yellow-400 animate-pulse" />
           ) : (
             <WifiOff size={20} className="text-red-400" />
           )}
           <span className="text-[rgb(var(--foreground-rgb-light))] dark:text-[rgb(var(--foreground-rgb-dark))]">
-            {connectionStatus === 'connected'
+            {isConnected === true
               ? 'Connected'
-              : connectionStatus === 'connecting'
+              : isConnecting === true
               ? 'Connecting...'
               : 'Disconnected'}
           </span>
