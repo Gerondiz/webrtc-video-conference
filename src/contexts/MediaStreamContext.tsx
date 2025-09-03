@@ -33,51 +33,50 @@ export const MediaStreamProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
 
-  const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Promise<void> => {
-    // Если уже инициализируемся, не повторяем
-    if (isInitializing) {
+const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Promise<void> => {
+  if (isInitializing || (hasAttemptedInitialization && !stream)) {
+    return;
+  }
+  
+  setIsInitializing(true);
+  setError(null);
+  
+  try {
+    // Проверяем доступные устройства
+    const status = await checkMediaDevices();
+    setDevicesStatus(status);
+    
+    // Если нет устройств, устанавливаем соответствующий статус
+    if (!status.hasCamera && !status.hasMicrophone) {
+      setError('No media devices found');
+      setHasAttemptedInitialization(true);
       return;
     }
     
-    setIsInitializing(true);
-    setError(null);
+    // Используем переданные constraints или стандартные на основе доступных устройств
+    const mediaConstraints = constraints || {
+      video: status.hasCamera,
+      audio: status.hasMicrophone,
+    };
     
-    try {
-      // Проверяем доступные устройства
-      const status = await checkMediaDevices();
-      setDevicesStatus(status);
-      
-      // Если нет устройств, не пытаемся получить доступ
-      if (!status.hasCamera && !status.hasMicrophone) {
-        setError('No media devices found');
-        setHasAttemptedInitialization(true);
-        return;
-      }
-      
-      // Используем переданные constraints или стандартные на основе доступных устройств
-      const mediaConstraints = constraints || {
-        video: status.hasCamera,
-        audio: status.hasMicrophone,
-      };
-      
-      const mediaStream = await getMediaDevicesWithPermissions(mediaConstraints);
-      setStream(mediaStream);
-      setHasAttemptedInitialization(true);
-      
-      // Устанавливаем начальные состояния аудио/видео
-      if (mediaStream) {
-        setIsAudioEnabled(mediaStream.getAudioTracks().some(track => track.enabled));
-        setIsVideoEnabled(mediaStream.getVideoTracks().some(track => track.enabled));
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to access media devices';
-      setError(errorMessage);
-      console.error('Media initialization error:', err);
-      setHasAttemptedInitialization(true);
-    } finally {
-      setIsInitializing(false);
+    const mediaStream = await getMediaDevicesWithPermissions(mediaConstraints);
+    setStream(mediaStream);
+    setHasAttemptedInitialization(true);
+    
+    // Устанавливаем начальные состояния аудио/видео
+    if (mediaStream) {
+      setIsAudioEnabled(mediaStream.getAudioTracks().some(track => track.enabled));
+      setIsVideoEnabled(mediaStream.getVideoTracks().some(track => track.enabled));
     }
-  }, [isInitializing]);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to access media devices';
+    setError(errorMessage);
+    console.error('Media initialization error:', err);
+    setHasAttemptedInitialization(true);
+  } finally {
+    setIsInitializing(false);
+  }
+}, [isInitializing, hasAttemptedInitialization, stream]);
 
   const stopMediaStream = useCallback(() => {
     if (stream) {

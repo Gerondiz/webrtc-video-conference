@@ -12,11 +12,6 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-export interface WebSocketMessage {
-  type: string;
-  data?: unknown;
-}
-
 export interface WebRTCSignal {
   target?: string;
   type?: string;
@@ -52,66 +47,55 @@ export interface Room {
 }
 
 export interface UserJoinedMessage {
+  type: 'user-joined';
   user: string;
 }
 
 export interface UserLeftMessage {
+  type: 'user-left';
   user: string;
 }
 
 export interface WebRTCOfferMessage {
+  type: 'webrtc-offer';
   from: string;
   payload: RTCSessionDescriptionInit;
 }
 
 export interface WebRTCAnswerMessage {
+  type: 'webrtc-answer';
   from: string;
   payload: RTCSessionDescriptionInit;
 }
 
 export interface WebRTCIceCandidateMessage {
+  type: 'webrtc-ice-candidate';
   from: string;
   payload: RTCIceCandidateInit;
 }
 
 export interface ChatMessageData {
+  type: 'chat-message';
   from: string;
   text: string;
+  timestamp?: string;
 }
 
 export interface ErrorMessage {
+  type: 'error';
   message: string;
 }
 
-//build version
 export interface RoomResponse {
   success: boolean;
   roomId?: string;
   message?: string;
 }
 
-// export interface SignalingMessage {
-//   type: string;
-//   roomId: string;
-//   userId: string;
-//   data?: WebRTCSignal | any;
-// }
-
 export interface UserMedia {
   stream: MediaStream | null;
   hasCamera: boolean;
   hasMicrophone: boolean;
-}
-
-// Добавляем к существующим типам
-
-export interface WebSocketMessage {
-  type: string;
-  roomId?: string;
-  username?: string;
-  text?: string;
-  timestamp?: string;
-  user?: string;
 }
 
 export interface JoinRoomMessage {
@@ -126,12 +110,14 @@ export interface LeaveRoomMessage {
   username: string;
 }
 
-export interface UserJoinedMessage {
-  type: 'user-joined';
-  user: string;
-}
-
-export interface UserLeftMessage {
-  type: 'user-left';
-  user: string;
-}
+// Базовый тип для всех сообщений WebSocket
+export type WebSocketMessage = 
+  | JoinRoomMessage
+  | LeaveRoomMessage
+  | ChatMessageData
+  | UserJoinedMessage
+  | UserLeftMessage
+  | WebRTCOfferMessage
+  | WebRTCAnswerMessage
+  | WebRTCIceCandidateMessage
+  | ErrorMessage;
