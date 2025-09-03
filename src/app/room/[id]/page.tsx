@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import { useRoomConnection } from '@/hooks/useRoomConnection';
-import { useRoomStore } from '@/stores/useRoomStore';
 import RoomHeader from '@/components/RoomPage/RoomHeader';
 import VideoGrid from '@/components/RoomPage/VideoGrid';
 import ChatPanel from '@/components/RoomPage/ChatPanel';
@@ -12,7 +11,6 @@ import ChatPanel from '@/components/RoomPage/ChatPanel';
 export default function RoomPage() {
   const router = useRouter();
   const { stream: localStream } = useMediaStream();
-  const { wsConnected, wsConnecting } = useRoomStore();
   const {
     roomId,
     sendChatMessage,

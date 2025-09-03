@@ -11,7 +11,6 @@ import {
   UserLeftMessage,
   JoinedMessage,
   ErrorMessage,
-  WebSocketMessage
 } from '@/types';
 
 export const useRoomConnection = () => {
