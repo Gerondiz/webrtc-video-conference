@@ -16,7 +16,6 @@ interface RoomState {
   // Состояние устройств (только для UI)
   isMicMuted: boolean;
   isCameraOff: boolean;
-  showDeviceSelector: boolean;
   isInitializing: boolean;
   
   // Действия
@@ -24,12 +23,12 @@ interface RoomState {
   setWsConnecting: (connecting: boolean) => void;
   setConnectionStatus: (status: string) => void;
   setConnectionError: (error: string | null) => void;
+  setUsers: (users: string[]) => void;
   addUser: (user: string) => void;
   removeUser: (user: string) => void;
   addChatMessage: (message: ChatMessage) => void;
   toggleMic: () => void;
   toggleCamera: () => void;
-  setShowDeviceSelector: (show: boolean) => void;
   setIsInitializing: (initializing: boolean) => void;
   reset: () => void;
 }
@@ -43,7 +42,6 @@ const initialState = {
   chatMessages: [],
   isMicMuted: false,
   isCameraOff: false,
-  showDeviceSelector: false,
   isInitializing: true,
 };
 
@@ -53,6 +51,7 @@ export const useRoomStore = create<RoomState>((set) => ({
   setWsConnecting: (connecting) => set({ wsConnecting: connecting }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setConnectionError: (error) => set({ connectionError: error }),
+  setUsers: (users) => set({ users }),
   addUser: (user) =>
     set((state) => {
       if (state.users.includes(user)) return state;
@@ -74,7 +73,6 @@ export const useRoomStore = create<RoomState>((set) => ({
     set((state) => ({
       isCameraOff: !state.isCameraOff
     })),
-  setShowDeviceSelector: (show) => set({ showDeviceSelector: show }),
   setIsInitializing: (initializing) => set({ isInitializing: initializing }),
   reset: () => set(initialState),
 }));

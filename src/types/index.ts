@@ -1,4 +1,62 @@
 // src/types.ts
+
+//типы принимаемые сигнальным сервером
+export interface UserJoinedMessage {
+  type: 'user-joined';
+  data: {
+    user: string;
+  };
+}
+
+export interface UserLeftMessage {
+  type: 'user-left';
+  data: {
+    user: string;
+  };
+}
+
+export interface ChatMessageData {
+  type: 'chat-message';
+  data: {
+    from: string;
+    text: string;
+    timestamp: string;
+  };
+}
+
+export interface JoinRoomMessage {
+  type: 'join-room';
+  data: {
+    roomId: string;
+    username: string;
+  };
+}
+
+export interface LeaveRoomMessage {
+  type: 'leave-room';
+  data: {
+    roomId: string;
+    username: string;
+  };
+}
+
+export interface JoinedMessage {
+  type: 'joined';
+  data: {
+    roomId: string;
+    users: string[];
+  };
+}
+
+export interface ErrorMessage {
+  type: 'error';
+  data: {
+    message: string;
+  };
+}
+
+
+//остальное
 export interface RemoteStream {
   userId: string;
   username: string;
@@ -46,16 +104,6 @@ export interface Room {
   hasPassword: boolean;
 }
 
-export interface UserJoinedMessage {
-  type: 'user-joined';
-  user: string;
-}
-
-export interface UserLeftMessage {
-  type: 'user-left';
-  user: string;
-}
-
 export interface WebRTCOfferMessage {
   type: 'webrtc-offer';
   from: string;
@@ -74,18 +122,6 @@ export interface WebRTCIceCandidateMessage {
   payload: RTCIceCandidateInit;
 }
 
-export interface ChatMessageData {
-  type: 'chat-message';
-  from: string;
-  text: string;
-  timestamp?: string;
-}
-
-export interface ErrorMessage {
-  type: 'error';
-  message: string;
-}
-
 export interface RoomResponse {
   success: boolean;
   roomId?: string;
@@ -98,18 +134,6 @@ export interface UserMedia {
   hasMicrophone: boolean;
 }
 
-export interface JoinRoomMessage {
-  type: 'join-room';
-  roomId: string;
-  username: string;
-}
-
-export interface LeaveRoomMessage {
-  type: 'leave-room';
-  roomId: string;
-  username: string;
-}
-
 // Базовый тип для всех сообщений WebSocket
 export type WebSocketMessage = 
   | JoinRoomMessage
@@ -120,4 +144,5 @@ export type WebSocketMessage =
   | WebRTCOfferMessage
   | WebRTCAnswerMessage
   | WebRTCIceCandidateMessage
+  | JoinedMessage
   | ErrorMessage;
