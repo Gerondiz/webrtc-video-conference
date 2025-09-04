@@ -1,7 +1,7 @@
 // src/hooks/useWebRTC.ts
 'use client';
 
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback } from 'react';
 import { WebRTCSignal } from '@/types';
 
 interface UseWebRTCOptions {
@@ -9,74 +9,12 @@ interface UseWebRTCOptions {
   onDataChannelMessage?: (message: string, userId: string) => void;
 }
 
-interface MediaDevicesStatus {
-  hasCamera: boolean;
-  hasMicrophone: boolean;
-}
 
 export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   const localStream = useRef<MediaStream | null>(null);
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const dataChannels = useRef<Map<string, RTCDataChannel>>(new Map());
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isCameraOff, setIsCameraOff] = useState(false);
-  const [devicesStatus, setDevicesStatus] = useState<MediaDevicesStatus>({
-    hasCamera: false,
-    hasMicrophone: false
-  });
 
-  // Функция проверки доступных устройств
-  const checkMediaDevices = useCallback(async (): Promise<MediaDevicesStatus> => {
-    try {
-      // Сначала запрашиваем разрешение на доступ к устройствам
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false
-      });
-
-      // Останавливаем поток после получения разрешения
-      stream.getTracks().forEach(track => track.stop());
-
-      // Теперь получаем список устройств с метками
-      const devices = await navigator.mediaDevices.enumerateDevices();
-
-      const hasMicrophone = devices.some(device => device.kind === 'audioinput' && device.deviceId !== '');
-      const hasCamera = devices.some(device => device.kind === 'videoinput' && device.deviceId !== '');
-
-      setDevicesStatus({ hasCamera, hasMicrophone });
-      return { hasCamera, hasMicrophone };
-    } catch (error) {
-      console.error('Error checking media devices:', error);
-      return { hasCamera: false, hasMicrophone: false };
-    }
-  }, []);
-
-  // Инициализация медиаустройств
-  const initMedia = useCallback(async (deviceIds?: { video?: string; audio?: string }) => {
-    try {
-      const devicesStatus = await checkMediaDevices();
-      console.log('Devices status:', devicesStatus);
-
-      const constraints: MediaStreamConstraints = {
-        audio: devicesStatus.hasMicrophone ?
-          (deviceIds?.audio ? { deviceId: deviceIds.audio } : true) : false,
-        video: devicesStatus.hasCamera ?
-          (deviceIds?.video ? { deviceId: deviceIds.video } : true) : false
-      };
-
-      // Проверяем, есть ли уже активный поток
-      if (localStream.current) {
-        localStream.current.getTracks().forEach(track => track.stop());
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      localStream.current = stream;
-      return stream;
-    } catch (error) {
-      console.error('Error accessing media devices:', error);
-      throw error;
-    }
-  }, [checkMediaDevices]);
 
   // Создание peer connection
   const createPeerConnection = useCallback((userId: string): RTCPeerConnection => {
@@ -181,27 +119,6 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
     }
   }, []);
 
-  // Управление медиа
-  const toggleMic = useCallback(() => {
-    if (localStream.current) {
-      const audioTracks = localStream.current.getAudioTracks();
-      audioTracks.forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsMicMuted(!isMicMuted);
-    }
-  }, [isMicMuted]);
-
-  const toggleCamera = useCallback(() => {
-    if (localStream.current) {
-      const videoTracks = localStream.current.getVideoTracks();
-      videoTracks.forEach(track => {
-        track.enabled = !track.enabled;
-      });
-      setIsCameraOff(!isCameraOff);
-    }
-  }, [isCameraOff]);
-
   // Очистка
   const cleanup = useCallback(() => {
     if (localStream.current) {
@@ -216,18 +133,11 @@ export const useWebRTC = (options: UseWebRTCOptions = {}) => {
   }, []);
 
   return {
-    initMedia,
     createOffer,
     handleOffer,
     handleAnswer,
     handleIceCandidate,
     sendDataMessage,
-    toggleMic,
-    toggleCamera,
-    isMicMuted,
-    isCameraOff,
-    devicesStatus,
-    checkMediaDevices,
     cleanup
   };
 };

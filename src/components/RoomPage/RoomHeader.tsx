@@ -30,7 +30,6 @@ export default function RoomHeader({
     ? !localStream.getVideoTracks().some(track => track.enabled)
     : isCameraOff;
 
-  // Обновляем состояние в store при изменении медиапотока
   const handleToggleMic = () => {
     onToggleMic();
     useRoomStore.getState().toggleMic();

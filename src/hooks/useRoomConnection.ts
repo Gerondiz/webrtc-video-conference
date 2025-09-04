@@ -3,6 +3,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
+import { useRoomStore } from '@/stores/useRoomStore';
 import {
   JoinRoomMessage,
   LeaveRoomMessage,
@@ -20,6 +21,8 @@ export const useRoomConnection = () => {
   const username = searchParams.get('username') || 'Anonymous';
   
   const { initMedia, stopMediaStream } = useMediaStream();
+  
+  // Получаем состояние WebSocket
   const {
     isConnected,
     isConnecting,
@@ -29,10 +32,23 @@ export const useRoomConnection = () => {
     disconnect: disconnectWebSocket,
   } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000');
 
-  const [hasJoined, setHasJoined] = useState(false);
+  // Получаем Zustand store
+  const {
+    setWsConnected,
+    setWsConnecting,
+    setUsers,
+    addUser,
+    removeUser,
+  } = useRoomStore();
+
   const [hasMediaInitialized, setHasMediaInitialized] = useState(false);
-  const [users, setUsers] = useState<string[]>([]);
   const joinSentRef = useRef(false);
+
+  // Синхронизация состояния WebSocket с хранилищем
+  useEffect(() => {
+    setWsConnected(isConnected);
+    setWsConnecting(isConnecting);
+  }, [isConnected, isConnecting, setWsConnected, setWsConnecting]);
 
   // Инициализация медиапотока при входе в комнату
   useEffect(() => {
@@ -55,12 +71,12 @@ export const useRoomConnection = () => {
   useEffect(() => {
     const handleUserJoined = (message: UserJoinedMessage) => {
       console.log('User joined:', message.data.user);
-      setUsers(prev => [...prev, message.data.user]);
+      addUser(message.data.user);
     };
 
     const handleUserLeft = (message: UserLeftMessage) => {
       console.log('User left:', message.data.user);
-      setUsers(prev => prev.filter(user => user !== message.data.user));
+      removeUser(message.data.user);
     };
 
     const handleJoined = (message: JoinedMessage) => {
@@ -83,7 +99,7 @@ export const useRoomConnection = () => {
       removeMessageHandler('joined', handleJoined);
       removeMessageHandler('error', handleError);
     };
-  }, [addMessageHandler, removeMessageHandler]);
+  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers]);
 
   // Отправка сообщения о присоединении к комнате
   useEffect(() => {
@@ -98,7 +114,6 @@ export const useRoomConnection = () => {
       
       sendMessage(joinMessage);
       joinSentRef.current = true;
-      setHasJoined(true);
     }
   }, [isConnected, roomId, username, sendMessage]);
 
@@ -129,6 +144,7 @@ export const useRoomConnection = () => {
     sendMessage(leaveMessage);
     stopMediaStream();
     disconnectWebSocket();
+    useRoomStore.getState().reset();
   }, [roomId, username, sendMessage, stopMediaStream, disconnectWebSocket]);
 
   return {
@@ -136,8 +152,6 @@ export const useRoomConnection = () => {
     username,
     isConnected,
     isConnecting,
-    hasJoined,
-    users,
     sendChatMessage,
     leaveRoom,
   };

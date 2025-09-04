@@ -1,10 +1,22 @@
 // src/hooks/useWebSocket.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { WebSocketMessage } from '@/types';
+import { 
+  WebSocketMessage, 
+
+} from '@/types';
 
 type MessageHandler<T = WebSocketMessage> = (message: T) => void;
 
-export const useWebSocket = (url: string) => {
+interface UseWebSocketReturn {
+  isConnected: boolean;
+  isConnecting: boolean;
+  sendMessage: (message: WebSocketMessage) => void;
+  addMessageHandler: <T extends WebSocketMessage>(type: string, handler: MessageHandler<T>) => void;
+  removeMessageHandler: <T extends WebSocketMessage>(type: string, handler: MessageHandler<T>) => void;
+  disconnect: () => void;
+}
+
+export const useWebSocket = (url: string): UseWebSocketReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const socketRef = useRef<WebSocket | null>(null);
