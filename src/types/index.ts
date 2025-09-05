@@ -55,6 +55,120 @@ export interface ErrorMessage {
   };
 }
 
+// типы для Mediasoup сообщений
+export interface MediasoupTransportCreatedMessage {
+  type: 'webRtcTransportCreated';
+  data: {
+    transportId: string;
+    direction: 'send' | 'recv';
+    iceParameters: {
+      usernameFragment: string;
+      password: string;
+    };
+    iceCandidates: Array<{
+      foundation: string;
+      priority: number;
+      ip: string;
+      protocol: 'udp' | 'tcp';
+      port: number;
+      type: 'host' | 'srflx' | 'prflx' | 'relay';
+      tcpType?: 'active' | 'passive' | 'so';
+    }>;
+    dtlsParameters: {
+      role?: 'auto' | 'client' | 'server';
+      fingerprints: Array<{
+        algorithm: string;
+        value: string;
+      }>;
+    };
+  };
+}
+
+export interface MediasoupNewProducerMessage {
+  type: 'new-producer';
+  data: {
+    producerId: string;
+    userId: string;
+    kind: 'audio' | 'video';
+  };
+}
+
+export interface MediasoupProducerClosedMessage {
+  type: 'producer-closed';
+  data: {
+    producerId: string;
+    userId: string;
+  };
+}
+
+export interface MediasoupConsumeMessage {
+  type: 'consumed';
+  data: {
+    id: string;
+    producerId: string;
+    kind: 'audio' | 'video';
+    rtpParameters: {
+      codecs: unknown[];
+      headerExtensions: unknown[];
+      rtcp: unknown;
+    };
+    userId: string;
+  };
+}
+
+// export interface MediasoupTransportCreatedMessage {
+//   type: 'webRtcTransportCreated';
+//   data: {
+//     id: string;
+//     iceParameters: IceParameters;
+//     iceCandidates: IceCandidate[];
+//     dtlsParameters: DtlsParameters;
+//     direction: 'send' | 'recv';
+//   };
+// }
+
+// Добавим недостающие типы сообщений
+export interface TransportConnectedMessage {
+  type: 'transport-connected';
+  data: {
+    transportId: string;
+  };
+}
+
+export interface ProducedMessage {
+  type: 'produced';
+  data: {
+    id: string;
+  };
+}
+
+export interface ProducersListMessage {
+  type: 'producers-list';
+  data: {
+    producers: Array<{
+      producerId: string;
+      userId: string;
+      kind: 'audio' | 'video';
+    }>;
+  };
+}
+export interface MediasoupJoinRoomMessage {
+  type: 'join-room';
+  data: {
+    roomId: string;
+    username: string;
+  };
+}
+
+export interface MediasoupLeaveRoomMessage {
+  type: 'leave-room';
+  data: {
+    roomId: string;
+    username: string;
+  };
+}
+
+
 
 //остальное
 export interface RemoteStream {
@@ -135,14 +249,25 @@ export interface UserMedia {
 }
 
 // Базовый тип для всех сообщений WebSocket
-export type WebSocketMessage = 
+export type WebSocketMessage =
   | JoinRoomMessage
   | LeaveRoomMessage
   | ChatMessageData
   | UserJoinedMessage
   | UserLeftMessage
-  | WebRTCOfferMessage
-  | WebRTCAnswerMessage
-  | WebRTCIceCandidateMessage
   | JoinedMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | MediasoupJoinRoomMessage
+  | MediasoupLeaveRoomMessage
+  | MediasoupTransportCreatedMessage;
+
+
+// Расширим основной тип сообщений
+export type ExtendedWebSocketMessage = WebSocketMessage |
+  MediasoupTransportCreatedMessage |
+  MediasoupNewProducerMessage |
+  MediasoupProducerClosedMessage |
+  MediasoupConsumeMessage |
+  TransportConnectedMessage |
+  ProducedMessage |
+  ProducersListMessage;

@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   WebSocketMessage, 
-
 } from '@/types';
 
 type MessageHandler<T = WebSocketMessage> = (message: T) => void;
