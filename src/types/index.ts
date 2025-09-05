@@ -1,20 +1,63 @@
 // src/types.ts
 
 //типы принимаемые сигнальным сервером
+
+export interface User {
+  id: string;
+  username: string;
+  sessionId?: string; // Добавляем опциональное поле
+  joinedAt: string;
+  isConnected: boolean;
+}
+
 export interface UserJoinedMessage {
   type: 'user-joined';
   data: {
-    user: string;
+    user: User;
   };
 }
 
 export interface UserLeftMessage {
   type: 'user-left';
   data: {
-    user: string;
+    user: User;
+    userId?: string;
   };
 }
 
+export interface UserConnectionStatusMessage {
+  type: 'user-connection-status';
+  data: {
+    userId: string;
+    isConnected: boolean;
+  };
+}
+
+export interface JoinRoomMessage {
+  type: 'join-room';
+  data: {
+    roomId: string;
+    username: string;
+    sessionId: string;
+  };
+}
+
+export interface JoinedMessage {
+  type: 'joined';
+  data: {
+    roomId: string;
+    users: User[];
+    sessionId: string;
+  };
+}
+export interface LeaveRoomMessage {
+  type: 'leave-room';
+  data: {
+    roomId: string;
+    username: string;
+    sessionId: string;
+  };
+}
 export interface ChatMessageData {
   type: 'chat-message';
   data: {
@@ -24,27 +67,10 @@ export interface ChatMessageData {
   };
 }
 
-export interface JoinRoomMessage {
-  type: 'join-room';
+export interface UsersUpdatedMessage {
+  type: 'users-updated';
   data: {
-    roomId: string;
-    username: string;
-  };
-}
-
-export interface LeaveRoomMessage {
-  type: 'leave-room';
-  data: {
-    roomId: string;
-    username: string;
-  };
-}
-
-export interface JoinedMessage {
-  type: 'joined';
-  data: {
-    roomId: string;
-    users: string[];
+    users: User[];
   };
 }
 
@@ -54,121 +80,6 @@ export interface ErrorMessage {
     message: string;
   };
 }
-
-// типы для Mediasoup сообщений
-export interface MediasoupTransportCreatedMessage {
-  type: 'webRtcTransportCreated';
-  data: {
-    transportId: string;
-    direction: 'send' | 'recv';
-    iceParameters: {
-      usernameFragment: string;
-      password: string;
-    };
-    iceCandidates: Array<{
-      foundation: string;
-      priority: number;
-      ip: string;
-      protocol: 'udp' | 'tcp';
-      port: number;
-      type: 'host' | 'srflx' | 'prflx' | 'relay';
-      tcpType?: 'active' | 'passive' | 'so';
-    }>;
-    dtlsParameters: {
-      role?: 'auto' | 'client' | 'server';
-      fingerprints: Array<{
-        algorithm: string;
-        value: string;
-      }>;
-    };
-  };
-}
-
-export interface MediasoupNewProducerMessage {
-  type: 'new-producer';
-  data: {
-    producerId: string;
-    userId: string;
-    kind: 'audio' | 'video';
-  };
-}
-
-export interface MediasoupProducerClosedMessage {
-  type: 'producer-closed';
-  data: {
-    producerId: string;
-    userId: string;
-  };
-}
-
-export interface MediasoupConsumeMessage {
-  type: 'consumed';
-  data: {
-    id: string;
-    producerId: string;
-    kind: 'audio' | 'video';
-    rtpParameters: {
-      codecs: unknown[];
-      headerExtensions: unknown[];
-      rtcp: unknown;
-    };
-    userId: string;
-  };
-}
-
-// export interface MediasoupTransportCreatedMessage {
-//   type: 'webRtcTransportCreated';
-//   data: {
-//     id: string;
-//     iceParameters: IceParameters;
-//     iceCandidates: IceCandidate[];
-//     dtlsParameters: DtlsParameters;
-//     direction: 'send' | 'recv';
-//   };
-// }
-
-// Добавим недостающие типы сообщений
-export interface TransportConnectedMessage {
-  type: 'transport-connected';
-  data: {
-    transportId: string;
-  };
-}
-
-export interface ProducedMessage {
-  type: 'produced';
-  data: {
-    id: string;
-  };
-}
-
-export interface ProducersListMessage {
-  type: 'producers-list';
-  data: {
-    producers: Array<{
-      producerId: string;
-      userId: string;
-      kind: 'audio' | 'video';
-    }>;
-  };
-}
-export interface MediasoupJoinRoomMessage {
-  type: 'join-room';
-  data: {
-    roomId: string;
-    username: string;
-  };
-}
-
-export interface MediasoupLeaveRoomMessage {
-  type: 'leave-room';
-  data: {
-    roomId: string;
-    username: string;
-  };
-}
-
-
 
 //остальное
 export interface RemoteStream {
@@ -182,12 +93,6 @@ export interface ChatMessage {
   from: string;
   text: string;
   timestamp: Date;
-}
-
-export interface WebRTCSignal {
-  target?: string;
-  type?: string;
-  payload?: unknown;
 }
 
 export interface MediaDeviceInfo {
@@ -207,35 +112,13 @@ export interface MediaDevicesStatus {
   hasMicrophone: boolean;
 }
 
-export interface User {
-  id: string;
-  username: string;
-}
+
 
 export interface Room {
   id: string;
   users: User[];
   hasPassword: boolean;
 }
-
-export interface WebRTCOfferMessage {
-  type: 'webrtc-offer';
-  from: string;
-  payload: RTCSessionDescriptionInit;
-}
-
-export interface WebRTCAnswerMessage {
-  type: 'webrtc-answer';
-  from: string;
-  payload: RTCSessionDescriptionInit;
-}
-
-export interface WebRTCIceCandidateMessage {
-  type: 'webrtc-ice-candidate';
-  from: string;
-  payload: RTCIceCandidateInit;
-}
-
 export interface RoomResponse {
   success: boolean;
   roomId?: string;
@@ -254,20 +137,8 @@ export type WebSocketMessage =
   | LeaveRoomMessage
   | ChatMessageData
   | UserJoinedMessage
+  | UserConnectionStatusMessage
   | UserLeftMessage
   | JoinedMessage
+  | UsersUpdatedMessage
   | ErrorMessage
-  | MediasoupJoinRoomMessage
-  | MediasoupLeaveRoomMessage
-  | MediasoupTransportCreatedMessage;
-
-
-// Расширим основной тип сообщений
-export type ExtendedWebSocketMessage = WebSocketMessage |
-  MediasoupTransportCreatedMessage |
-  MediasoupNewProducerMessage |
-  MediasoupProducerClosedMessage |
-  MediasoupConsumeMessage |
-  TransportConnectedMessage |
-  ProducedMessage |
-  ProducersListMessage;

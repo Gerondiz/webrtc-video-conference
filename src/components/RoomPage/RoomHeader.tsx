@@ -1,7 +1,16 @@
 // src/components/RoomPage/RoomHeader.tsx
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Settings, Users, Circle } from 'lucide-react';
-import { useMediaStream } from '@/contexts/MediaStreamContext';
-import { useRoomStore } from '@/stores/useRoomStore';
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  PhoneOff,
+  Settings,
+  Users,
+  Circle,
+} from "lucide-react";
+import { useMediaStream } from "@/contexts/MediaStreamContext";
+import { useRoomStore } from "@/stores/useRoomStore";
 
 interface RoomHeaderProps {
   roomId: string;
@@ -19,15 +28,19 @@ export default function RoomHeader({
   onSettings,
 }: RoomHeaderProps) {
   const { stream: localStream } = useMediaStream();
-  const { wsConnected, wsConnecting, users, isMicMuted, isCameraOff } = useRoomStore();
-  
+  const { wsConnected, wsConnecting, users, isMicMuted, isCameraOff } =
+    useRoomStore();
+
+  // Подсчитываем только подключенных пользователей
+  const connectedUsers = users.filter((user) => user.isConnected);
+
   // Получаем текущее состояние микрофона и камеры из потока
-  const actualIsMicMuted = localStream 
-    ? !localStream.getAudioTracks().some(track => track.enabled)
+  const actualIsMicMuted = localStream
+    ? !localStream.getAudioTracks().some((track) => track.enabled)
     : isMicMuted;
-    
-  const actualIsVideoMuted = localStream 
-    ? !localStream.getVideoTracks().some(track => track.enabled)
+
+  const actualIsVideoMuted = localStream
+    ? !localStream.getVideoTracks().some((track) => track.enabled)
     : isCameraOff;
 
   const handleToggleMic = () => {
@@ -50,17 +63,32 @@ export default function RoomHeader({
           <Users size={20} />
           <span>{users.length} users</span>
         </div>
-        <div className="flex items-center space-x-2" title={wsConnected ? 'Connected' : wsConnecting ? 'Connecting...' : 'Disconnected'}>
-          <Circle 
-            size={12} 
+        <div
+          className="flex items-center space-x-2"
+          title={
+            wsConnected
+              ? "Connected"
+              : wsConnecting
+              ? "Connecting..."
+              : "Disconnected"
+          }
+        >
+          <Circle
+            size={12}
             className={
-              wsConnected ? 'fill-green-400 text-green-400' : 
-              wsConnecting ? 'fill-yellow-400 text-yellow-400 animate-pulse' : 
-              'fill-red-400 text-red-400'
-            } 
+              wsConnected
+                ? "fill-green-400 text-green-400"
+                : wsConnecting
+                ? "fill-yellow-400 text-yellow-400 animate-pulse"
+                : "fill-red-400 text-red-400"
+            }
           />
           <span className="text-sm text-[rgb(var(--foreground-rgb-light))] dark:text-[rgb(var(--foreground-rgb-dark))]">
-            {wsConnected ? 'Connected' : wsConnecting ? 'Connecting...' : 'Disconnected'}
+            {wsConnected
+              ? "Connected"
+              : wsConnecting
+              ? "Connecting..."
+              : "Disconnected"}
           </span>
         </div>
       </div>
@@ -69,10 +97,10 @@ export default function RoomHeader({
           onClick={handleToggleMic}
           className={`p-2 rounded-full ${
             actualIsMicMuted
-              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-              : 'bg-[rgb(var(--primary-button-light))] text-white dark:bg-[rgb(var(--primary-button-dark))]'
+              ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
+              : "bg-[rgb(var(--primary-button-light))] text-white dark:bg-[rgb(var(--primary-button-dark))]"
           } hover:opacity-90 transition-opacity`}
-          title={actualIsMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+          title={actualIsMicMuted ? "Unmute microphone" : "Mute microphone"}
           disabled={!localStream}
         >
           {actualIsMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
@@ -82,10 +110,10 @@ export default function RoomHeader({
           onClick={handleToggleVideo}
           className={`p-2 rounded-full ${
             actualIsVideoMuted
-              ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'
-              : 'bg-[rgb(var(--primary-button-light))] text-white dark:bg-[rgb(var(--primary-button-dark))]'
+              ? "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300"
+              : "bg-[rgb(var(--primary-button-light))] text-white dark:bg-[rgb(var(--primary-button-dark))]"
           } hover:opacity-90 transition-opacity`}
-          title={actualIsVideoMuted ? 'Enable video' : 'Disable video'}
+          title={actualIsVideoMuted ? "Enable video" : "Disable video"}
           disabled={!localStream}
         >
           {actualIsVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}

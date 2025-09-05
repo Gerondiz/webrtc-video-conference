@@ -1,5 +1,5 @@
 // src/hooks/useRoomConnection.ts
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
@@ -9,8 +9,10 @@ import {
   LeaveRoomMessage,
   ChatMessageData,
   UserJoinedMessage,
+  UserConnectionStatusMessage,
   UserLeftMessage,
   JoinedMessage,
+  UsersUpdatedMessage,
   ErrorMessage,
 } from '@/types';
 
@@ -19,10 +21,14 @@ export const useRoomConnection = () => {
   const searchParams = useSearchParams();
   const roomId = params.id as string;
   const username = searchParams.get('username') || 'Anonymous';
-  
+
+  // Генерируем sessionId один раз при монтировании
+  const sessionId = useMemo(() => {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
+
   const { initMedia, stopMediaStream } = useMediaStream();
-  
-  // Получаем состояние WebSocket
+
   const {
     isConnected,
     isConnecting,
@@ -32,25 +38,24 @@ export const useRoomConnection = () => {
     disconnect: disconnectWebSocket,
   } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000');
 
-  // Получаем Zustand store
   const {
     setWsConnected,
     setWsConnecting,
     setUsers,
     addUser,
     removeUser,
+    updateUserConnectionStatus,
   } = useRoomStore();
 
   const [hasMediaInitialized, setHasMediaInitialized] = useState(false);
-  const joinSentRef = useRef(false);
 
-  // Синхронизация состояния WebSocket с хранилищем
+  // Синхронизация состояния WebSocket
   useEffect(() => {
     setWsConnected(isConnected);
     setWsConnecting(isConnecting);
   }, [isConnected, isConnecting, setWsConnected, setWsConnecting]);
 
-  // Инициализация медиапотока при входе в комнату
+  // Инициализация медиапотока
   useEffect(() => {
     if (!hasMediaInitialized) {
       const initializeMedia = async () => {
@@ -62,12 +67,11 @@ export const useRoomConnection = () => {
           setHasMediaInitialized(true);
         }
       };
-
       initializeMedia();
     }
   }, [initMedia, hasMediaInitialized]);
 
-  // Обработчик для входящих сообщений
+  // Обработчики сообщений
   useEffect(() => {
     const handleUserJoined = (message: UserJoinedMessage) => {
       console.log('User joined:', message.data.user);
@@ -76,12 +80,36 @@ export const useRoomConnection = () => {
 
     const handleUserLeft = (message: UserLeftMessage) => {
       console.log('User left:', message.data.user);
-      removeUser(message.data.user);
+      // Используем userId если есть, иначе id из user объекта
+      const userIdToRemove = message.data.userId || message.data.user.id;
+      removeUser(userIdToRemove);
     };
-
     const handleJoined = (message: JoinedMessage) => {
       console.log('Joined room successfully:', message.data.users);
-      setUsers(message.data.users || []);
+
+      // Преобразуем пользователей, добавляя недостающие поля при необходимости
+      const users = message.data.users.map(user => ({
+        ...user,
+        isConnected: user.isConnected !== undefined ? user.isConnected : true,
+        sessionId: user.sessionId || ''
+      }));
+
+      setUsers(users);
+
+      // Сохраняем sessionId от сервера
+      if (message.data.sessionId) {
+        localStorage.setItem(`session_${roomId}`, message.data.sessionId);
+      }
+    };
+
+    const handleUserConnectionStatus = (message: UserConnectionStatusMessage) => {
+      console.log('User connection status:', message.data.userId, message.data.isConnected);
+      updateUserConnectionStatus(message.data.userId, message.data.isConnected);
+    };
+
+    const handleUsersUpdated = (message: UsersUpdatedMessage) => {
+      console.log('Users list updated:', message.data.users);
+      setUsers(message.data.users);
     };
 
     const handleError = (message: ErrorMessage) => {
@@ -91,31 +119,35 @@ export const useRoomConnection = () => {
     addMessageHandler<UserJoinedMessage>('user-joined', handleUserJoined);
     addMessageHandler<UserLeftMessage>('user-left', handleUserLeft);
     addMessageHandler<JoinedMessage>('joined', handleJoined);
+    addMessageHandler<UserConnectionStatusMessage>('user-connection-status', handleUserConnectionStatus);
+    addMessageHandler<UsersUpdatedMessage>('users-updated', handleUsersUpdated);
     addMessageHandler<ErrorMessage>('error', handleError);
 
     return () => {
       removeMessageHandler('user-joined', handleUserJoined);
       removeMessageHandler('user-left', handleUserLeft);
       removeMessageHandler('joined', handleJoined);
+      removeMessageHandler('user-connection-status', handleUserConnectionStatus);
+      removeMessageHandler('users-updated', handleUsersUpdated);
       removeMessageHandler('error', handleError);
     };
-  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers]);
+  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers, updateUserConnectionStatus, roomId]);
 
-  // Отправка сообщения о присоединении к комнате
+  // Отправка сообщения серверу о присоединении к комнате
   useEffect(() => {
-    if (isConnected && !joinSentRef.current) {
+    if (isConnected && hasMediaInitialized) {
       const joinMessage: JoinRoomMessage = {
         type: 'join-room',
         data: {
           roomId,
           username,
+          sessionId, // Отправляем sessionId
         },
       };
-      
+
       sendMessage(joinMessage);
-      joinSentRef.current = true;
     }
-  }, [isConnected, roomId, username, sendMessage]);
+  }, [isConnected, roomId, username, sendMessage, hasMediaInitialized, sessionId]);
 
   // Функция для отправки сообщений чата
   const sendChatMessage = useCallback((text: string) => {
@@ -127,7 +159,7 @@ export const useRoomConnection = () => {
         timestamp: new Date().toISOString(),
       },
     };
-    
+
     sendMessage(chatMessage);
   }, [username, sendMessage]);
 
@@ -138,14 +170,18 @@ export const useRoomConnection = () => {
       data: {
         roomId,
         username,
+        sessionId, // Добавляем sessionId
       },
     };
-    
+
     sendMessage(leaveMessage);
     stopMediaStream();
     disconnectWebSocket();
     useRoomStore.getState().reset();
-  }, [roomId, username, sendMessage, stopMediaStream, disconnectWebSocket]);
+
+    // Очищаем sessionId
+    localStorage.removeItem(`session_${roomId}`);
+  }, [roomId, username, sendMessage, stopMediaStream, disconnectWebSocket, sessionId]);
 
   return {
     roomId,
