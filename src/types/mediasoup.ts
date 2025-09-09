@@ -1,9 +1,4 @@
-// types/mediasoup.ts
-export interface IceParameters {
-  usernameFragment: string;
-  password: string;
-}
-
+// src/types/mediasoup.ts
 export interface IceCandidate {
   foundation: string;
   priority: number;
@@ -11,48 +6,93 @@ export interface IceCandidate {
   protocol: 'udp' | 'tcp';
   port: number;
   type: 'host' | 'srflx' | 'prflx' | 'relay';
-  tcpType?: 'active' | 'passive' | 'so';
+  tcpType?: 'passive' | 'active' | 'so';
+}
+
+export interface IceParameters {
+  usernameFragment: string;
+  password: string;
+  iceLite?: boolean;
 }
 
 export interface DtlsParameters {
   role?: 'auto' | 'client' | 'server';
-  fingerprints: Array<{
-    algorithm: string;
-    value: string;
-  }>;
+  fingerprints: DtlsFingerprint[];
 }
 
-export interface TransportOptions {
-  id: string;
-  iceParameters: IceParameters;
-  iceCandidates: IceCandidate[];
-  dtlsParameters: DtlsParameters;
-  iceServers?: RTCIceServer[];
-  sctpParameters?: unknown;
+export interface DtlsFingerprint {
+  algorithm: string;
+  value: string;
 }
 
 export interface RtpCapabilities {
-  codecs: unknown[];
-  headerExtensions: unknown[];
+  codecs: RtpCodecCapability[];
+  headerExtensions: RtpHeaderExtension[];
+}
+
+export interface RtpCodecCapability {
+  kind: 'audio' | 'video';
+  mimeType: string;
+  preferredPayloadType?: number;
+  clockRate: number;
+  channels?: number;
+  parameters?: any;
+  rtcpFeedback?: RtcpFeedback[];
+}
+
+export interface RtpHeaderExtension {
+  kind: 'audio' | 'video';
+  uri: string;
+  preferredId: number;
+  preferredEncrypt?: boolean;
+  direction?: 'sendrecv' | 'sendonly' | 'recvonly' | 'inactive';
+}
+
+export interface RtcpFeedback {
+  type: string;
+  parameter?: string;
 }
 
 export interface RtpParameters {
-  codecs: unknown[];
-  headerExtensions: unknown[];
-  rtcp: unknown;
+  codecs: RtpCodecParameters[];
+  headerExtensions?: RtpHeaderExtensionParameters[];
+  encodings?: RtpEncodingParameters[];
+  rtcp?: RtcpParameters;
 }
 
-export interface ProducerOptions {
-  track: MediaStreamTrack;
-  encodings?: unknown[];
-  codecOptions?: unknown;
-  appData?: Record<string, unknown>;
+export interface RtpCodecParameters {
+  mimeType: string;
+  payloadType: number;
+  clockRate: number;
+  channels?: number;
+  parameters?: any;
+  rtcpFeedback?: RtcpFeedback[];
 }
 
-export interface ConsumerOptions {
-  id: string;
-  producerId: string;
-  kind: 'audio' | 'video';
-  rtpParameters: RtpParameters;
-  appData?: Record<string, unknown>;
+export interface RtpHeaderExtensionParameters {
+  uri: string;
+  id: number;
+  encrypt?: boolean;
+  parameters?: any;
+}
+
+export interface RtpEncodingParameters {
+  ssrc?: number;
+  rid?: string;
+  codecPayloadType?: number;
+  rtx?: { ssrc: number };
+  dtx?: boolean;
+  scalabilityMode?: string;
+  scaleResolutionDownBy?: number;
+  maxBitrate?: number;
+  maxFramerate?: number;
+  adaptivePtime?: boolean;
+  priority?: 'very-low' | 'low' | 'medium' | 'high';
+  networkPriority?: 'very-low' | 'low' | 'medium' | 'high';
+}
+
+export interface RtcpParameters {
+  cname?: string;
+  reducedSize?: boolean;
+  mux?: boolean;
 }

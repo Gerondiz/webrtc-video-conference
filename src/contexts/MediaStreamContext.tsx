@@ -80,8 +80,11 @@ const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Prom
 
   const stopMediaStream = useCallback(() => {
     if (stream) {
+      console.log("stop stream", stream)
       stream.getTracks().forEach(track => track.stop());
+      
       setStream(null);
+      console.log("stop stream_", stream)
       setIsAudioEnabled(false);
       setIsVideoEnabled(false);
     }

@@ -32,7 +32,7 @@ export default function RoomHeader({
     useRoomStore();
 
   // Подсчитываем только подключенных пользователей
-  const connectedUsers = users.filter((user) => user.isConnected);
+  // const connectedUsers = users.filter((user) => user.isConnected);
 
   // Получаем текущее состояние микрофона и камеры из потока
   const actualIsMicMuted = localStream

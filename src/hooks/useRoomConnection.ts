@@ -85,7 +85,19 @@ export const useRoomConnection = () => {
       removeUser(userIdToRemove);
     };
     const handleJoined = (message: JoinedMessage) => {
+      console.log('✅ Joined room, rtpCapabilities:', message.data.rtpCapabilities);
       console.log('Joined room successfully:', message.data.users);
+
+      // ✅ Используем sessionId из сообщения сервера
+      const serverSessionId = message.data.sessionId;
+      // ✅ Ищем пользователя по sessionId
+      const me = message.data.users.find(u => u.sessionId === serverSessionId);
+      if (me) {
+        useRoomStore.getState().setCurrentUserId(me.id);
+        console.log('✅ User ID set:', me.id); // ✅ Добавь лог
+      } else {
+        console.warn('⚠️ User not found in users list by sessionId:', serverSessionId);
+      }
 
       // Преобразуем пользователей, добавляя недостающие поля при необходимости
       const users = message.data.users.map(user => ({
@@ -146,6 +158,9 @@ export const useRoomConnection = () => {
       };
 
       sendMessage(joinMessage);
+
+      localStorage.setItem('username', username);
+
     }
   }, [isConnected, roomId, username, sendMessage, hasMediaInitialized, sessionId]);
 
@@ -188,7 +203,10 @@ export const useRoomConnection = () => {
     username,
     isConnected,
     isConnecting,
+    sendMessage,
     sendChatMessage,
     leaveRoom,
+    addMessageHandler, // Добавляем
+    removeMessageHandler, // Добавляем
   };
 };

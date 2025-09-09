@@ -1,4 +1,5 @@
 // src/components/RoomPage/VideoGrid.tsx
+'use client';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import VideoPlayer from '@/components/VideoPlayer';
 
@@ -13,9 +14,8 @@ interface VideoGridProps {
 export default function VideoGrid({ remoteStreams }: VideoGridProps) {
   const { stream: localStream } = useMediaStream();
 
-  // Получаем состояние видео из локального потока
-  const isVideoMuted = localStream 
-    ? !localStream.getVideoTracks().some(track => track.enabled)
+  const isVideoMuted = localStream
+    ? !localStream.getVideoTracks().some((track) => track.enabled)
     : true;
 
   return (
@@ -36,9 +36,9 @@ export default function VideoGrid({ remoteStreams }: VideoGridProps) {
             )}
           </div>
         )}
-        
+
         {/* Удаленные видео потоки */}
-        {remoteStreams.map(remote => (
+        {remoteStreams.map((remote) => (
           <VideoPlayer
             key={remote.userId}
             stream={remote.stream}
@@ -46,8 +46,7 @@ export default function VideoGrid({ remoteStreams }: VideoGridProps) {
             isLocal={false}
           />
         ))}
-        
-        {/* Заглушка, если нет видео */}
+
         {!localStream && remoteStreams.length === 0 && (
           <div className="col-span-full flex items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 rounded-lg">
             <p className="text-gray-500 dark:text-gray-400">
