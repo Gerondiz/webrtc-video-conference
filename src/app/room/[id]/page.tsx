@@ -6,6 +6,7 @@ import { useMediaStream } from "@/contexts/MediaStreamContext";
 import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { useMediasoup } from "@/hooks/useMediasoup";
 import { useRoomStore } from "@/stores/useRoomStore";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import RoomHeader from "@/components/RoomPage/RoomHeader";
 import VideoGrid from "@/components/RoomPage/VideoGrid";
 import ChatPanel from "@/components/RoomPage/ChatPanel";
@@ -13,7 +14,16 @@ import ChatPanel from "@/components/RoomPage/ChatPanel";
 export default function RoomPage() {
   const router = useRouter();
   const { stream: localStream } = useMediaStream();
-  const { roomId, sendChatMessage, leaveRoom, isConnected } = useRoomConnection();
+
+  const webSocket = useWebSocket(
+    process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001"
+  );
+  const { isConnected } = webSocket;
+
+  // ✅ Передаем общий WebSocket в useRoomConnection
+  const { roomId, sendChatMessage, leaveRoom } = useRoomConnection({
+    webSocket, // ✅ Передаем существующий экземпляр
+  });
 
   // ✅ Извлекаем currentUserId из store
   const { users, currentUserId } = useRoomStore();
@@ -37,24 +47,37 @@ export default function RoomPage() {
   // Инициализация SFU
   const { initializeMediasoup, cleanup } = useMediasoup({
     roomId,
-    userId: currentUserId || 'unknown', // ✅ Используем currentUserId
+    userId: currentUserId || "unknown",
     onRemoteStreamAdded: (stream, userId, username) => {
       setRemoteStreams((prev) => [...prev, { userId, username, stream }]);
     },
     onRemoteStreamRemoved: (userId) => {
       setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
     },
+    webSocket,
   });
 
   // Запускаем SFU после подключения к WebSocket и получения медиа
-useEffect(() => {
-  if (isConnected && localStream && currentUserId && currentUserId !== 'unknown') {
-    console.log('🔌 Initializing Mediasoup...');
-    initializeMediasoup();
-  } else {
-    console.log('⚠️ Cannot initialize Mediasoup: isConnected:', isConnected, 'localStream:', !!localStream, 'currentUserId:', currentUserId);
-  }
-}, [isConnected, localStream, currentUserId, initializeMediasoup]); // ✅ currentUserId в зависимостях
+  useEffect(() => {
+    if (
+      isConnected &&
+      localStream &&
+      currentUserId &&
+      currentUserId !== "unknown"
+    ) {
+      console.log("🔌 Initializing Mediasoup...");
+      initializeMediasoup();
+    } else {
+      console.log(
+        "⚠️ Cannot initialize Mediasoup: isConnected:",
+        isConnected,
+        "localStream:",
+        !!localStream,
+        "currentUserId:",
+        currentUserId
+      );
+    }
+  }, [isConnected, localStream, currentUserId, initializeMediasoup]); // ✅ currentUserId в зависимостях
 
   // Очистка при выходе
   useEffect(() => {

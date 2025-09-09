@@ -37,7 +37,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
 
   // ЕДИНСТВЕННЫЙ setUsers — обновляет пользователей и устанавливает currentUserId
   setUsers: (users) => {
-    const username = localStorage.getItem('username') || 'Anonymous';
+    const username = sessionStorage.getItem('username') || 'Anonymous';
     const me = users.find((u) => u.username === username);
     console.log('username', username)
     console.log('user', me)

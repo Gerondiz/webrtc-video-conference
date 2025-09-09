@@ -1,12 +1,9 @@
 // src/hooks/useWebSocket.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  WebSocketMessage, 
-} from '@/types';
+import { WebSocketMessage } from '@/types';
 
 type MessageHandler<T = WebSocketMessage> = (message: T) => void;
-
-interface UseWebSocketReturn {
+export interface UseWebSocketReturn {
   isConnected: boolean;
   isConnecting: boolean;
   sendMessage: (message: WebSocketMessage) => void;
@@ -16,11 +13,77 @@ interface UseWebSocketReturn {
 }
 
 export const useWebSocket = (url: string): UseWebSocketReturn => {
+  
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
   const socketRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, MessageHandler[]>>(new Map());
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ Создаём соединение только один раз
+  useEffect(() => {
+    // Если соединение уже существует и открыто — ничего не делаем
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    // Если есть попытка переподключения — очищаем таймаут
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Создаём новое соединение
+    setIsConnecting(true);
+    
+    const socket = new WebSocket(url);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log('✅ WebSocket connected (ID:', url, ')');
+      setIsConnected(true);
+      setIsConnecting(false);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data) as WebSocketMessage;
+        console.log('📩 Received message:', message.type);
+        const handlers = handlersRef.current.get(message.type) || [];
+        handlers.forEach(handler => handler(message));
+      } catch (error) {
+        console.error('Error parsing message:', error);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('❌ WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+      console.log('🔌 WebSocket disconnected (URL:', url, ')');
+      setIsConnected(false);
+      setIsConnecting(false);
+      
+      // Попытка переподключения через 1 секунду
+      reconnectTimeoutRef.current = setTimeout(() => {
+        // Просто вызываем эффект заново
+        setIsConnecting(true);
+      }, 1000);
+    };
+
+    // Очистка при размонтировании или изменении URL
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+    };
+  }, [url]); // ✅ Зависимость только от URL
 
   const addMessageHandler = useCallback(<T extends WebSocketMessage>(type: string, handler: MessageHandler<T>) => {
     if (!handlersRef.current.has(type)) {
@@ -42,68 +105,18 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     }
   }, []);
 
-  const connect = useCallback(() => {
-    if (socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) {
-      return;
-    }
-
-    setIsConnecting(true);
-    const socket = new WebSocket(url);
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      console.log('WebSocket connected');
-      setIsConnected(true);
-      setIsConnecting(false);
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
-
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as WebSocketMessage;
-        const handlers = handlersRef.current.get(message.type) || [];
-        handlers.forEach(handler => handler(message));
-      } catch (error) {
-        console.error('Error parsing message:', error);
-      }
-    };
-
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-      setIsConnecting(false);
-      
-      // Попытка переподключения с экспоненциальной задержкой
-      const delay = Math.min(1000 * Math.pow(2, (reconnectTimeoutRef.current ? 2 : 1)), 10000);
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connect();
-      }, delay);
-    };
-  }, [url]);
-
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     if (socketRef.current) {
       socketRef.current.close();
       socketRef.current = null;
     }
+    setIsConnected(false);
+    setIsConnecting(false);
   }, []);
-
-  useEffect(() => {
-    connect();
-    
-    return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
 
   return {
     isConnected,

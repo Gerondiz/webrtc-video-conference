@@ -1,7 +1,6 @@
 // src/hooks/useMediasoup.ts
 import { useEffect, useRef, useCallback } from 'react';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
-import { useWebSocket } from '@/hooks/useWebSocket';
 import * as mediasoupClient from 'mediasoup-client';
 
 import {
@@ -19,6 +18,8 @@ import {
     ErrorMessage
 } from '@/types';
 
+import { UseWebSocketReturn } from '@/hooks/useWebSocket';
+
 // ✅ Правильный импорт типов из mediasoup-client
 type Transport = mediasoupClient.types.Transport;
 type Producer = mediasoupClient.types.Producer;
@@ -28,8 +29,10 @@ type RtpCapabilities = mediasoupClient.types.RtpCapabilities;
 interface MediasoupOptions {
     roomId: string;
     userId: string;
+    webSocket: UseWebSocketReturn;
     onRemoteStreamAdded: (stream: MediaStream, userId: string, username: string) => void;
     onRemoteStreamRemoved: (userId: string) => void;
+    
 }
 
 export const useMediasoup = ({
@@ -37,9 +40,11 @@ export const useMediasoup = ({
     userId,
     onRemoteStreamAdded,
     onRemoteStreamRemoved,
+    webSocket,
 }: MediasoupOptions) => {
     const { stream: localStream } = useMediaStream();
-    const { sendMessage, addMessageHandler, removeMessageHandler } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000');
+    const { sendMessage, addMessageHandler, removeMessageHandler } = webSocket;
+    // const { sendMessage, addMessageHandler, removeMessageHandler } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000');
 
     const deviceRef = useRef<mediasoupClient.Device | null>(null);
     const sendTransportRef = useRef<Transport | null>(null);
@@ -74,6 +79,8 @@ export const useMediasoup = ({
                             iceCandidates: message.data.iceCandidates,
                             dtlsParameters: message.data.dtlsParameters,
                         };
+
+                        console.log('transportOptions',transportOptions)
 
                         const transport =
                             direction === 'send'
