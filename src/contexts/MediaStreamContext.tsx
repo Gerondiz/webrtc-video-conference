@@ -34,8 +34,8 @@ export const MediaStreamProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
 
 const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Promise<void> => {
-  if (isInitializing || (hasAttemptedInitialization && !stream)) {
-    return;
+  if (isInitializing) {
+    return; // Если уже инициализируется — выходим
   }
   
   setIsInitializing(true);
@@ -59,6 +59,11 @@ const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Prom
       audio: status.hasMicrophone,
     };
     
+    // Останавливаем текущий поток, если он есть
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    
     const mediaStream = await getMediaDevicesWithPermissions(mediaConstraints);
     setStream(mediaStream);
     setHasAttemptedInitialization(true);
@@ -76,7 +81,7 @@ const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Prom
   } finally {
     setIsInitializing(false);
   }
-}, [isInitializing, hasAttemptedInitialization, stream]);
+}, [isInitializing, stream]);
 
   const stopMediaStream = useCallback(() => {
     if (stream) {
@@ -87,6 +92,7 @@ const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Prom
       console.log("stop stream_", stream)
       setIsAudioEnabled(false);
       setIsVideoEnabled(false);
+      setHasAttemptedInitialization(false);
     }
   }, [stream]);
 

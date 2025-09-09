@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { generateUsername } from "@/lib/utils";
 import { createRoom, joinRoom } from "@/lib/api";
+import { useToast } from '@/contexts/ToastContext';
 
 interface LoginProps {
   onLogin: () => void; // Callback для обработки успешного входа
@@ -17,6 +18,8 @@ export default function Login({ onLogin }: LoginProps) {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const router = useRouter();
+
+  const { addToast } = useToast();
 
   const handleCreateRoom = async () => {
     setIsCreatingRoom(true);
@@ -30,7 +33,7 @@ export default function Login({ onLogin }: LoginProps) {
       }
     } catch (error) {
       console.error("Error creating room:", error);
-      alert("Error creating room");
+      addToast("Error creating room", 'error');
     } finally {
       setIsCreatingRoom(false);
     }

@@ -1,5 +1,6 @@
 // src/hooks/useWebSocket.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from '@/contexts/ToastContext';
 import { WebSocketMessage } from '@/types';
 
 type MessageHandler<T = WebSocketMessage> = (message: T) => void;
@@ -19,6 +20,8 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
   const socketRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, MessageHandler[]>>(new Map());
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { addToast } = useToast();
 
   // ✅ Создаём соединение только один раз
   useEffect(() => {
@@ -58,6 +61,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
 
     socket.onerror = (error) => {
       console.error('❌ WebSocket error:', error);
+      addToast('Connection failed. Please try again.', 'error');
     };
 
     socket.onclose = () => {

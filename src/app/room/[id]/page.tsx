@@ -26,7 +26,7 @@ export default function RoomPage() {
   });
 
   // ✅ Извлекаем currentUserId из store
-  const { users, currentUserId } = useRoomStore();
+  const { currentUserId } = useRoomStore();
 
   // Состояние для удалённых потоков
   const [remoteStreams, setRemoteStreams] = useState<

@@ -1,7 +1,15 @@
-// src/hooks/useMediasoup.ts
 import { useEffect, useRef, useCallback } from 'react';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import * as mediasoupClient from 'mediasoup-client';
+import { useToast } from '@/contexts/ToastContext';
+import { UseWebSocketReturn } from '@/hooks/useWebSocket';
+
+// ✅ Правильный импорт типов из mediasoup-client
+
+type RtpCapabilities = mediasoupClient.types.RtpCapabilities;
+type Transport = mediasoupClient.types.Transport;
+type Producer = mediasoupClient.types.Producer;
+type Consumer = mediasoupClient.types.Consumer;
 
 import {
     WebRtcTransportCreatedMessage,
@@ -15,16 +23,8 @@ import {
     NewProducerMessage,
     ProducerClosedMessage,
     ProducersListMessage,
-    ErrorMessage
+    ErrorMessage,
 } from '@/types';
-
-import { UseWebSocketReturn } from '@/hooks/useWebSocket';
-
-// ✅ Правильный импорт типов из mediasoup-client
-type Transport = mediasoupClient.types.Transport;
-type Producer = mediasoupClient.types.Producer;
-type Consumer = mediasoupClient.types.Consumer;
-type RtpCapabilities = mediasoupClient.types.RtpCapabilities;
 
 interface MediasoupOptions {
     roomId: string;
@@ -32,11 +32,9 @@ interface MediasoupOptions {
     webSocket: UseWebSocketReturn;
     onRemoteStreamAdded: (stream: MediaStream, userId: string, username: string) => void;
     onRemoteStreamRemoved: (userId: string) => void;
-    
 }
 
 export const useMediasoup = ({
-    roomId,
     userId,
     onRemoteStreamAdded,
     onRemoteStreamRemoved,
@@ -44,7 +42,7 @@ export const useMediasoup = ({
 }: MediasoupOptions) => {
     const { stream: localStream } = useMediaStream();
     const { sendMessage, addMessageHandler, removeMessageHandler } = webSocket;
-    // const { sendMessage, addMessageHandler, removeMessageHandler } = useWebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000');
+    const { addToast } = useToast();
 
     const deviceRef = useRef<mediasoupClient.Device | null>(null);
     const sendTransportRef = useRef<Transport | null>(null);
@@ -57,22 +55,19 @@ export const useMediasoup = ({
     const createTransport = useCallback(
         async (direction: 'send' | 'recv'): Promise<Transport> => {
             console.log(`🚀 Creating ${direction} transport...`);
-
             console.log('✅ Using userId:', userId);
 
             if (!userId || userId === 'unknown') {
                 console.warn('⚠️ User ID not set, cannot create transport');
                 return Promise.reject(new Error('User ID not set'));
-            }            
+            }
 
-            return new Promise<Transport>((resolve, reject) => {
-
+            return new Promise<Transport>((resolve) => {
                 const handler = (message: WebRtcTransportCreatedMessage) => {
                     console.log(`✅ Received webRtcTransportCreated for ${message.data.direction}:`, message.data.transportId);
                     if (message.type === 'webRtcTransportCreated' && message.data.direction === direction) {
                         removeMessageHandler('webRtcTransportCreated', handler);
 
-                        // ✅ Правильная структура: добавляем id
                         const transportOptions = {
                             id: message.data.transportId,
                             iceParameters: message.data.iceParameters,
@@ -80,14 +75,14 @@ export const useMediasoup = ({
                             dtlsParameters: message.data.dtlsParameters,
                         };
 
-                        console.log('transportOptions',transportOptions)
+                        console.log('transportOptions', transportOptions);
 
                         const transport =
                             direction === 'send'
                                 ? deviceRef.current!.createSendTransport(transportOptions)
                                 : deviceRef.current!.createRecvTransport(transportOptions);
 
-                        transport.on('connect', ({ dtlsParameters }, callback, errback) => {
+                        transport.on('connect', ({ dtlsParameters }, callback) => {
                             console.log('🔗 Connecting transport:', message.data.transportId);
                             console.log('sendMessage: connect-transport');
                             const connectMessage: ConnectTransportMessage = {
@@ -102,7 +97,7 @@ export const useMediasoup = ({
                             transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
                                 try {
                                     console.log('📤 Sending produce message with rtpParameters:', rtpParameters);
-                                    
+
                                     const produceMessage: ProduceMessage = {
                                         type: 'produce',
                                         data: {
@@ -120,8 +115,9 @@ export const useMediasoup = ({
                                         }
                                     };
                                     addMessageHandler('produced', producedHandler);
-                                } catch (error) {
-                                    errback(error);
+                                } catch (error: unknown) {
+                                    const err = error instanceof Error ? error : new Error('Unknown error');
+                                    errback(err);
                                 }
                             });
                         }
@@ -160,14 +156,13 @@ export const useMediasoup = ({
 
                 sendMessage(consumeMessage);
 
-                const handler = async (message: ConsumedMessage) => { // ✅ async
+                const handler = async (message: ConsumedMessage) => {
                     console.log('✅ Received consumed message:', message.data);
                     if (message.type === 'consumed' && message.data.producerId === producerId) {
                         removeMessageHandler('consumed', handler);
 
                         const { consumerId, rtpParameters, kind } = message.data;
 
-                        // ✅ AWAIT — consume() возвращает Promise<Consumer>
                         const consumer = await recvTransportRef.current!.consume({
                             id: consumerId,
                             producerId,
@@ -211,8 +206,7 @@ export const useMediasoup = ({
         if (!localStream) return;
 
         try {
-            // ✅ Получаем rtpCapabilities от сервера через joined-сообщение
-            // Пока используем заглушку — в продакшене получай из useRoomConnection
+            // Получаем rtpCapabilities от сервера через joined-сообщение
             const rtpCapabilities: RtpCapabilities = {
                 codecs: [
                     {
@@ -274,7 +268,6 @@ export const useMediasoup = ({
         };
 
         const handleProducerClosed = (message: ProducerClosedMessage) => {
-
             const { producerId, userId } = message.data;
             const consumer = Array.from(consumersRef.current.values()).find((c) => c.producerId === producerId);
             if (consumer) {
@@ -313,10 +306,11 @@ export const useMediasoup = ({
         deviceRef.current = null;
     }, []);
 
-    // 6. Оюработка ошибок
+    // 6. Обработка ошибок
     useEffect(() => {
         const handleError = (message: ErrorMessage) => {
             console.error('❌ SFU Error:', message.data.message);
+            addToast(message.data.message, 'error');
         };
 
         addMessageHandler('error', handleError);
@@ -324,7 +318,7 @@ export const useMediasoup = ({
         return () => {
             removeMessageHandler('error', handleError);
         };
-    }, [addMessageHandler, removeMessageHandler]);
+    }, [addMessageHandler, removeMessageHandler, addToast]);
 
     return {
         initializeMediasoup,

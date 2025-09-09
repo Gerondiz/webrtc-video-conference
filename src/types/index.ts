@@ -1,11 +1,16 @@
-// src/types.ts
+import * as mediasoupClient from 'mediasoup-client';
 
-//типы принимаемые сигнальным сервером
+type IceCandidate = mediasoupClient.types.IceCandidate;
+type DtlsParameters = mediasoupClient.types.DtlsParameters;
+type RtpParameters = mediasoupClient.types.RtpParameters;
+type RtpCapabilities = mediasoupClient.types.RtpCapabilities;
+
+// === Базовые типы для сигнального сервера ===
 
 export interface User {
   id: string;
   username: string;
-  sessionId?: string; // Добавляем опциональное поле
+  sessionId?: string;
   joinedAt: string;
   isConnected: boolean;
 }
@@ -48,9 +53,10 @@ export interface JoinedMessage {
     roomId: string;
     users: User[];
     sessionId: string;
-    rtpCapabilities?: any;
+    rtpCapabilities?: RtpCapabilities;
   };
 }
+
 export interface LeaveRoomMessage {
   type: 'leave-room';
   data: {
@@ -59,6 +65,7 @@ export interface LeaveRoomMessage {
     sessionId: string;
   };
 }
+
 export interface ChatMessageData {
   type: 'chat-message';
   data: {
@@ -82,61 +89,8 @@ export interface ErrorMessage {
   };
 }
 
-//Mediasoup
 
-export interface WebRTCSignal {
-  target?: string;
-  type?: string;
-  payload?: unknown;
-}
-
-
-// SFU Signaling Messages
-
-export interface SfuOfferMessage {
-  type: 'sfu-offer';
-  data: {
-    sdp: string;
-    roomId: string;
-    userId: string; // опционально, если нужно
-  };
-}
-
-export interface SfuAnswerMessage {
-  type: 'sfu-answer';
-  data: {
-    sdp: string;
-    roomId: string;
-  };
-}
-
-export interface SfuIceCandidateMessage {
-  type: 'sfu-ice-candidate';
-  data: {
-    candidate: RTCIceCandidateInit;
-    roomId: string;
-    targetUserId?: string; // если SFU отправляет кандидата конкретному пользователю
-  };
-}
-
-export interface SfuStreamAddedMessage {
-  type: 'sfu-stream-added';
-  data: {
-    userId: string;
-    username: string;
-    streamId: string; // можно использовать для сопоставления track'ов
-  };
-}
-
-export interface SfuStreamRemovedMessage {
-  type: 'sfu-stream-removed';
-  data: {
-    userId: string;
-    streamId: string;
-  };
-}
-
-//остальное
+// === Остальные типы ===
 export interface RemoteStream {
   userId: string;
   username: string;
@@ -167,13 +121,12 @@ export interface MediaDevicesStatus {
   hasMicrophone: boolean;
 }
 
-
-
 export interface Room {
   id: string;
   users: User[];
   hasPassword: boolean;
 }
+
 export interface RoomResponse {
   success: boolean;
   roomId?: string;
@@ -186,6 +139,8 @@ export interface UserMedia {
   hasMicrophone: boolean;
 }
 
+// === Mediasoup сообщения ===
+
 export interface CreateTransportMessage {
   type: 'create-transport';
   data: {
@@ -197,16 +152,15 @@ export interface ConnectTransportMessage {
   type: 'connect-transport';
   data: {
     transportId: string;
-    dtlsParameters: any;
+    dtlsParameters: DtlsParameters;
   };
 }
-
 export interface ProduceMessage {
   type: 'produce';
   data: {
     transportId: string;
     kind: 'audio' | 'video';
-    rtpParameters: any;
+    rtpParameters: RtpParameters;
   };
 }
 
@@ -215,13 +169,13 @@ export interface ConsumeMessage {
   data: {
     transportId: string;
     producerId: string;
-    rtpCapabilities: any;
+    rtpCapabilities: RtpCapabilities;
   };
 }
 
 export interface GetProducersMessage {
   type: 'get-producers';
-  data: {};
+  data: Record<string, never>;
 }
 
 export interface ProducedMessage {
@@ -231,22 +185,13 @@ export interface ProducedMessage {
   };
 }
 
-export interface ConsumeMessage {
-  type: 'consume';
-  data: {
-    transportId: string;
-    producerId: string;
-    rtpCapabilities: any;
-  };
-}
-
 export interface ConsumedMessage {
   type: 'consumed';
   data: {
     consumerId: string;
     producerId: string;
-    kind: string;
-    rtpParameters: any;
+    kind: 'audio' | 'video';
+    rtpParameters: RtpParameters;
     userId: string;
   };
 }
@@ -256,7 +201,7 @@ export interface NewProducerMessage {
   data: {
     producerId: string;
     userId: string;
-    kind: string;
+    kind: 'audio' | 'video';
   };
 }
 
@@ -274,7 +219,7 @@ export interface ProducersListMessage {
     producers: Array<{
       producerId: string;
       userId: string;
-      kind: string;
+      kind: 'audio' | 'video';
     }>;
   };
 }
@@ -284,12 +229,17 @@ export interface WebRtcTransportCreatedMessage {
   data: {
     transportId: string;
     direction: 'send' | 'recv';
-    iceParameters: any;
-    iceCandidates: any[];
-    dtlsParameters: any;
+    iceParameters: IceParameters;
+    iceCandidates: IceCandidate[];
+    dtlsParameters: DtlsParameters;
   };
 }
 
+export interface IceParameters {
+  usernameFragment: string;
+  password: string;
+  iceLite?: boolean;
+}
 export interface TransportConnectedMessage {
   type: 'transport-connected';
   data: {
@@ -297,7 +247,7 @@ export interface TransportConnectedMessage {
   };
 }
 
-// Базовый тип для всех сообщений WebSocket
+// === Базовый тип для всех сообщений WebSocket ===
 export type WebSocketMessage =
   | JoinRoomMessage
   | LeaveRoomMessage
@@ -308,12 +258,6 @@ export type WebSocketMessage =
   | JoinedMessage
   | UsersUpdatedMessage
   | ErrorMessage
-  | SfuOfferMessage
-  | SfuAnswerMessage
-  | SfuIceCandidateMessage
-  | SfuStreamAddedMessage
-  | SfuStreamRemovedMessage
-  // Mediasoup messages
   | CreateTransportMessage
   | ConnectTransportMessage
   | ProduceMessage
@@ -321,9 +265,18 @@ export type WebSocketMessage =
   | ConsumedMessage
   | GetProducersMessage
   | ProducedMessage
-  | ConsumedMessage
   | NewProducerMessage
   | ProducerClosedMessage
   | ProducersListMessage
   | WebRtcTransportCreatedMessage
   | TransportConnectedMessage;
+
+// === Типы для Toast ===
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
+  duration?: number;
+}

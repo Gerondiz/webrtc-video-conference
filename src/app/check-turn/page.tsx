@@ -87,7 +87,7 @@ const CheckTURNPage = () => {
 
       // Тестируем подключение к TURN серверу
       const turnCandidates = await testTURNConnection(
-        "turn:20.0.0.107:3478",
+        process.env.NEXT_PUBLIC_TURN_SERVER || "turn:20.0.0.107:3478",
         "turnuser",
         "12345678"
       );
