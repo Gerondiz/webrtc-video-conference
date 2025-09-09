@@ -101,6 +101,8 @@ export const useMediasoup = ({
                         if (direction === 'send') {
                             transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
                                 try {
+                                    console.log('📤 Sending produce message with rtpParameters:', rtpParameters);
+                                    
                                     const produceMessage: ProduceMessage = {
                                         type: 'produce',
                                         data: {

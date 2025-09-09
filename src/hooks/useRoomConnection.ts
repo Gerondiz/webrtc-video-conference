@@ -51,7 +51,6 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
 
   // Синхронизация состояния WebSocket
   useEffect(() => {
-    console.log("connecting")
     setWsConnected(isConnected);
     setWsConnecting(isConnecting);
   }, [isConnected, isConnecting, setWsConnected, setWsConnecting]);
