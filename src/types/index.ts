@@ -54,6 +54,7 @@ export interface JoinedMessage {
     users: User[];
     sessionId: string;
     rtpCapabilities?: RtpCapabilities;
+    chatHistory?: ChatMessageData[];
   };
 }
 
@@ -73,6 +74,25 @@ export interface ChatMessageData {
     text: string;
     timestamp: string;
   };
+}
+
+export interface ChatMessage {
+  id: string;
+  from: string;
+  text: string;
+  timestamp: Date;
+}
+
+// ✅ Тип для запроса истории чата
+export interface GetChatHistoryMessage {
+  type: 'get-chat-history';
+  data: Record<string, never>;
+}
+
+// ✅ Тип для ответа с историей чата
+export interface ChatHistoryMessage {
+  type: 'chat-history';
+  data: ChatMessage[];
 }
 
 export interface UsersUpdatedMessage {
@@ -95,13 +115,6 @@ export interface RemoteStream {
   userId: string;
   username: string;
   stream: MediaStream;
-}
-
-export interface ChatMessage {
-  id: string;
-  from: string;
-  text: string;
-  timestamp: Date;
 }
 
 export interface MediaDeviceInfo {
@@ -253,6 +266,8 @@ export type WebSocketMessage =
   | LeaveRoomMessage
   | ChatMessageData
   | UserJoinedMessage
+  | GetChatHistoryMessage
+  | ChatHistoryMessage
   | UserConnectionStatusMessage
   | UserLeftMessage
   | JoinedMessage

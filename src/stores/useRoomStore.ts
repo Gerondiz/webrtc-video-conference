@@ -23,7 +23,7 @@ interface RoomStore {
   reset: () => void;
 }
 
-export const useRoomStore = create<RoomStore>((set, get) => ({
+export const useRoomStore = create<RoomStore>((set) => ({
   wsConnected: false,
   wsConnecting: true,
   users: [],
@@ -39,14 +39,11 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   setUsers: (users) => {
     const username = sessionStorage.getItem('username') || 'Anonymous';
     const me = users.find((u) => u.username === username);
-    console.log('username', username)
-    console.log('user', me)
 
     set({
       users: [...users],
       currentUserId: me?.id || null, // безопасно: string | null
     });
-    console.log('userId', me?.id || null)
   },
 
   addUser: (user) =>

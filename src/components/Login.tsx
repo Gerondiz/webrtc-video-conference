@@ -41,7 +41,8 @@ export default function Login({ onLogin }: LoginProps) {
 
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
-      alert("Please enter a room ID");
+      // alert("Please enter a room ID");
+      addToast("Please enter a room ID", 'warning');
       return;
     }
     setIsJoiningRoom(true);
@@ -51,11 +52,13 @@ export default function Login({ onLogin }: LoginProps) {
         router.push(`/room/${roomId}?username=${username}`);
         onLogin();
       } else {
-        alert("Room not found or invalid");
+        addToast("Room not found or invalid", 'warning');
+        // alert("Room not found or invalid");
       }
     } catch (error) {
       console.error("Error joining room:", error);
-      alert("Error joining room");
+      addToast("Room not found or invalid", 'warning');
+      // alert("Error joining room");
     } finally {
       setIsJoiningRoom(false);
     }

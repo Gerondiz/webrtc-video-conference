@@ -1,13 +1,16 @@
 // src/hooks/useRoomConnection.ts
 import { useEffect, useCallback, useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { UseWebSocketReturn } from '@/hooks/useWebSocket'; // ✅ Импортируем тип
+import { UseWebSocketReturn } from '@/hooks/useWebSocket';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import { useRoomStore } from '@/stores/useRoomStore';
+import { useChatStore } from '@/stores/useChatStore';
 import {
   JoinRoomMessage,
   LeaveRoomMessage,
   ChatMessageData,
+  ChatHistoryMessage,
+  GetChatHistoryMessage,
   UserJoinedMessage,
   UserConnectionStatusMessage,
   UserLeftMessage,
@@ -16,7 +19,6 @@ import {
   ErrorMessage,
 } from '@/types';
 
-// ✅ Указываем тип для параметра
 export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn }) => {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -48,6 +50,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
   } = useRoomStore();
 
   const [hasMediaInitialized, setHasMediaInitialized] = useState(false);
+  const { addMessage: addChatMessage, setMessages: setChatMessages } = useChatStore();
 
   // Синхронизация состояния WebSocket
   useEffect(() => {
@@ -88,9 +91,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
       console.log('✅ Joined room, rtpCapabilities:', message.data.rtpCapabilities);
       console.log('Joined room successfully:', message.data.users);
 
-      // ✅ Используем sessionId из сообщения сервера
       const serverSessionId = message.data.sessionId;
-      // ✅ Ищем пользователя по sessionId
       const me = message.data.users.find(u => u.sessionId === serverSessionId);
       if (me) {
         useRoomStore.getState().setCurrentUserId(me.id);
@@ -99,7 +100,6 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
         console.warn('⚠️ User not found in users list by sessionId:', serverSessionId);
       }
 
-      // Преобразуем пользователей, добавляя недостающие поля при необходимости
       const users = message.data.users.map(user => ({
         ...user,
         isConnected: user.isConnected !== undefined ? user.isConnected : true,
@@ -107,6 +107,18 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
       }));
 
       setUsers(users);
+
+      // ✅ Правильное преобразование истории чата
+      // console.log('setChatMessages_1', message)
+      // if (message.data.chatHistory) {
+      //   console.log('setChatMessages_2', message.data)
+      //   setChatMessages(message.data.chatHistory.map(msg => ({
+      //     id: msg.data.timestamp,
+      //     from: msg.data.from,
+      //     text: msg.data.text,
+      //     timestamp: new Date(msg.data.timestamp)
+      //   })));
+      // }
 
       if (message.data.sessionId) {
         sessionStorage.setItem(`session_${roomId}`, message.data.sessionId);
@@ -123,16 +135,39 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
       setUsers(message.data.users);
     };
 
+    const handleChatMessage = (message: ChatMessageData) => {
+      console.log('Received chat message:', message.data);
+      console.log('Message:', message);
+      addChatMessage({
+        id: message.data.timestamp, // ✅ Используем timestamp как ID
+        from: message.data.from,
+        text: message.data.text,
+        timestamp: new Date(message.data.timestamp) // ✅ Преобразуем строку в Date
+      });
+    };
+
+    const handleChatHistory = (message: ChatHistoryMessage) => {
+      console.log('Received chat data:', message);
+      console.log('Received chat history:', message.data);
+      setChatMessages(message.data.map(msg => ({
+        id: msg.id,
+        from: msg.from,
+        text: msg.text,
+        timestamp: new Date(msg.timestamp)
+      })));
+    };
+
     const handleError = (message: ErrorMessage) => {
       console.error('Server error:', message.data.message);
     };
 
-    // ✅ Исправленные типы
     addMessageHandler('user-joined', handleUserJoined as (message: UserJoinedMessage) => void);
     addMessageHandler('user-left', handleUserLeft as (message: UserLeftMessage) => void);
     addMessageHandler('joined', handleJoined as (message: JoinedMessage) => void);
     addMessageHandler('user-connection-status', handleUserConnectionStatus as (message: UserConnectionStatusMessage) => void);
     addMessageHandler('users-updated', handleUsersUpdated as (message: UsersUpdatedMessage) => void);
+    addMessageHandler('chat-message', handleChatMessage as (message: ChatMessageData) => void);
+    addMessageHandler('chat-history', handleChatHistory as (message: ChatHistoryMessage) => void);
     addMessageHandler('error', handleError as (message: ErrorMessage) => void);
 
     return () => {
@@ -141,9 +176,11 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
       removeMessageHandler('joined', handleJoined as (message: JoinedMessage) => void);
       removeMessageHandler('user-connection-status', handleUserConnectionStatus as (message: UserConnectionStatusMessage) => void);
       removeMessageHandler('users-updated', handleUsersUpdated as (message: UsersUpdatedMessage) => void);
+      removeMessageHandler('chat-message', handleChatMessage as (message: ChatMessageData) => void);
+      removeMessageHandler('chat-history', handleChatHistory as (message: ChatHistoryMessage) => void);
       removeMessageHandler('error', handleError as (message: ErrorMessage) => void);
     };
-  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers, updateUserConnectionStatus, roomId]);
+  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers, updateUserConnectionStatus, roomId, addChatMessage, setChatMessages]);
 
   // Отправка сообщения серверу о присоединении к комнате
   useEffect(() => {
@@ -158,6 +195,15 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
       };
 
       sendMessage(joinMessage);
+
+      // ✅ Запрашиваем историю чата после присоединения
+      setTimeout(() => {
+        const historyMessage: GetChatHistoryMessage = { // ✅ Указываем правильный тип
+          type: 'get-chat-history',
+          data: {}, // ✅ Пустой объект
+        };
+        sendMessage(historyMessage);
+      }, 100);
 
       sessionStorage.setItem('username', username);
     }
@@ -192,6 +238,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
     stopMediaStream();
     disconnectWebSocket();
     useRoomStore.getState().reset();
+    useChatStore.getState().clearMessages();
 
     sessionStorage.removeItem(`session_${roomId}`);
   }, [roomId, username, sendMessage, stopMediaStream, disconnectWebSocket, sessionId]);

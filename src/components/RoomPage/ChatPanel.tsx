@@ -2,17 +2,18 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, Send } from "lucide-react";
+import { useChatStore } from '@/stores/useChatStore'; // ✅ Добавляем
 import { ChatMessage } from '@/types';
 
 interface ChatPanelProps {
   roomId: string;
-  sendMessage?: (text: string) => void; // Изменяем сигнатуру
+  sendMessage?: (text: string) => void;
 }
 
-export default function ChatPanel({ sendMessage }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function ChatPanel({ roomId, sendMessage }: ChatPanelProps) {
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messages = useChatStore(state => state.messages); // ✅ Получаем сообщения из хранилища
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,18 +26,8 @@ export default function ChatPanel({ sendMessage }: ChatPanelProps) {
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
 
-    const message: ChatMessage = {
-      id: Date.now().toString(),
-      from: "You",
-      text: newMessage,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, message]);
-
-    // Отправка сообщения через WebSocket, если функция предоставлена
     if (sendMessage) {
-      sendMessage(newMessage); // Теперь отправляем только текст
+      sendMessage(newMessage);
     }
 
     setNewMessage("");

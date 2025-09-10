@@ -43,7 +43,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log('✅ WebSocket connected (ID:', url, ')');
+      console.log('✅ WebSocket connected.');
       setIsConnected(true);
       setIsConnecting(false);
     };
@@ -65,7 +65,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
     };
 
     socket.onclose = () => {
-      console.log('🔌 WebSocket disconnected (URL:', url, ')');
+      console.log('🔌 WebSocket disconnected.');
       setIsConnected(false);
       setIsConnecting(false);
       
@@ -87,7 +87,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
         socketRef.current = null;
       }
     };
-  }, [url]); // ✅ Зависимость только от URL
+  }, [url, addToast]); // ✅ Зависимость только от URL
 
   const addMessageHandler = useCallback(<T extends WebSocketMessage>(type: string, handler: MessageHandler<T>) => {
     if (!handlersRef.current.has(type)) {

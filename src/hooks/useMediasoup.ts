@@ -310,7 +310,7 @@ export const useMediasoup = ({
     useEffect(() => {
         const handleError = (message: ErrorMessage) => {
             console.error('❌ SFU Error:', message.data.message);
-            addToast(message.data.message, 'error');
+            // addToast(message.data.message, 'error');
         };
 
         addMessageHandler('error', handleError);
@@ -318,7 +318,7 @@ export const useMediasoup = ({
         return () => {
             removeMessageHandler('error', handleError);
         };
-    }, [addMessageHandler, removeMessageHandler, addToast]);
+    }, [addMessageHandler, removeMessageHandler]);
 
     return {
         initializeMediasoup,
