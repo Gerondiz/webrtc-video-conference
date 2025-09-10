@@ -19,6 +19,13 @@
   --background-end-rgb-dark: 0, 0, 0; /* Черный фон для темной темы */
   --primary-button-dark: 13, 148, 187; /* Темно-синий для кнопок темной темы */
   --secondary-button-dark: 21, 128, 61; /* Темно-зеленый для кнопок темной темы */
+
+  --toastify-color-light: #fff;
+  --toastify-color-dark: #1f2937;
+  --toastify-color-info: #3b82f6;
+  --toastify-color-success: #10b981;
+  --toastify-color-warning: #f59e0b;
+  --toastify-color-error: #ef4444;
 }
 
 /* Светлая тема по умолчанию */

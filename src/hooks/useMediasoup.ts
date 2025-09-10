@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import * as mediasoupClient from 'mediasoup-client';
-import { useToast } from '@/contexts/ToastContext';
 import { UseWebSocketReturn } from '@/hooks/useWebSocket';
 
 // ✅ Правильный импорт типов из mediasoup-client
@@ -42,7 +41,6 @@ export const useMediasoup = ({
 }: MediasoupOptions) => {
     const { stream: localStream } = useMediaStream();
     const { sendMessage, addMessageHandler, removeMessageHandler } = webSocket;
-    const { addToast } = useToast();
 
     const deviceRef = useRef<mediasoupClient.Device | null>(null);
     const sendTransportRef = useRef<Transport | null>(null);

@@ -1,21 +1,31 @@
 // src/app/layout.tsx
-'use client';
+"use client";
 import "./globals.css";
-import { ToastProvider } from '@/contexts/ToastContext';
-import ToastContainer from '@/components/ToastContainer';
-import { MediaStreamProvider } from '@/contexts/MediaStreamContext';
-import { ReactNode } from 'react';
+import 'react-toastify/dist/ReactToastify.css';
+
+import { ToastContainer } from 'react-toastify';
+import { MediaStreamProvider } from "@/contexts/MediaStreamContext";
+import { ReactNode } from "react";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <ToastProvider>
-        <MediaStreamProvider>
-          {children}
-          <ToastContainer />
-        </MediaStreamProvider>
-        </ToastProvider>
+          <MediaStreamProvider>
+            {children}
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
+          </MediaStreamProvider>
       </body>
     </html>
   );
