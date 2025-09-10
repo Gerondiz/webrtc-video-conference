@@ -25,7 +25,7 @@ export interface UserJoinedMessage {
 export interface UserLeftMessage {
   type: 'user-left';
   data: {
-    user: User;
+    username: User;
     userId?: string;
   };
 }
@@ -285,13 +285,3 @@ export type WebSocketMessage =
   | ProducersListMessage
   | WebRtcTransportCreatedMessage
   | TransportConnectedMessage;
-
-// === Типы для Toast ===
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-  duration?: number;
-}

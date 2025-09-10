@@ -1,10 +1,11 @@
+// src/hooks/useMediasoup.ts
 import { useEffect, useRef, useCallback } from 'react';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import * as mediasoupClient from 'mediasoup-client';
 import { UseWebSocketReturn } from '@/hooks/useWebSocket';
+import { useRoomStore } from '@/stores/useRoomStore';
 
 // ✅ Правильный импорт типов из mediasoup-client
-
 type RtpCapabilities = mediasoupClient.types.RtpCapabilities;
 type Transport = mediasoupClient.types.Transport;
 type Producer = mediasoupClient.types.Producer;
@@ -48,6 +49,9 @@ export const useMediasoup = ({
     const producersRef = useRef<Map<string, Producer>>(new Map());
     const consumersRef = useRef<Map<string, Consumer>>(new Map());
     const remoteStreamsRef = useRef<Map<string, MediaStream>>(new Map());
+
+    // ✅ Храним маппинг userId -> username
+    const userNamesRef = useRef<Map<string, string>>(new Map());
 
     // 1. Создание транспорта
     const createTransport = useCallback(
@@ -143,12 +147,13 @@ export const useMediasoup = ({
             if (!recvTransportRef.current || !deviceRef.current) return;
 
             try {
+                // ✅ Исправлено: правильный тип сообщения
                 const consumeMessage: ConsumeMessage = {
                     type: 'consume',
                     data: {
                         transportId: recvTransportRef.current.id,
                         producerId,
-                        rtpCapabilities: deviceRef.current.rtpCapabilities,
+                        rtpCapabilities: deviceRef.current.rtpCapabilities, // ✅ Правильное имя поля
                     },
                 };
 
@@ -173,20 +178,33 @@ export const useMediasoup = ({
                         const track = consumer.track;
                         if (!track) return;
 
+                        // ✅ Получаем имя пользователя из маппинга
+                        const username = userNamesRef.current.get(producerUserId) || 'Unknown';
+
                         let remoteStream = remoteStreamsRef.current.get(producerUserId);
                         if (!remoteStream) {
                             remoteStream = new MediaStream();
                             remoteStreamsRef.current.set(producerUserId, remoteStream);
-                            onRemoteStreamAdded(remoteStream, producerUserId, 'Unknown');
+                            onRemoteStreamAdded(remoteStream, producerUserId, username);
                         }
 
                         remoteStream.addTrack(track);
 
-                        console.log(`🎬 Added ${track.kind} track to remote stream for user ${producerUserId}`);
+                        console.log(`🎬 Added ${track.kind} track to remote stream for user ${producerUserId} (${username})`);
 
                         consumer.observer.on('close', () => {
                             consumersRef.current.delete(consumerId);
                             onRemoteStreamRemoved(producerUserId);
+
+                            // Дополнительно очищаем поток
+                            const stream = remoteStreamsRef.current.get(producerUserId);
+                            if (stream) {
+                                // Останавливаем все треки потока
+                                stream.getTracks().forEach(track => {
+                                    track.stop();
+                                });
+                                remoteStreamsRef.current.delete(producerUserId);
+                            }
                         });
                     }
                 };
@@ -265,15 +283,40 @@ export const useMediasoup = ({
             }
         };
 
-        const handleProducerClosed = (message: ProducerClosedMessage) => {
-            const { producerId, userId } = message.data;
-            const consumer = Array.from(consumersRef.current.values()).find((c) => c.producerId === producerId);
-            if (consumer) {
-                consumer.close();
-                consumersRef.current.delete(consumer.id);
-                onRemoteStreamRemoved(userId);
-            }
-        };
+const handleProducerClosed = (message: ProducerClosedMessage) => {
+    const { producerId, userId: producerUserId } = message.data;
+    console.log(`🔚 [${producerUserId}] Producer closed notification: ${producerId}`);
+    
+    // Ищем consumer по producerId
+    let consumerToClose: Consumer | undefined;
+    let consumerId: string | undefined;
+    
+    consumersRef.current.forEach((consumer, id) => {
+        if (consumer.producerId === producerId) {
+            consumerToClose = consumer;
+            consumerId = id;
+        }
+    });
+    
+    if (consumerToClose && consumerId) {
+        console.log(`🔚 [${producerUserId}] Closing consumer ${consumerId} for producer ${producerId}`);
+        consumerToClose.close(); // Это вызовет событие 'close' у consumer.observer
+    } else {
+        // Consumer уже закрыт или не найден, вызываем onRemoteStreamRemoved напрямую
+        console.log(`🔚 [${producerUserId}] No active consumer, cleaning up stream directly`);
+        // Очищаем поток напрямую
+        const stream = remoteStreamsRef.current.get(producerUserId);
+        if (stream) {
+            console.log(`🔚 [${producerUserId}] Stopping ${stream.getTracks().length} tracks`);
+            stream.getTracks().forEach(track => {
+                console.log(`⏹️ [${producerUserId}] Stopping track: ${track.kind}`);
+                track.stop();
+            });
+            remoteStreamsRef.current.delete(producerUserId);
+        }
+        onRemoteStreamRemoved(producerUserId);
+    }
+};
 
         const handleProducersList = (message: ProducersListMessage) => {
             console.log('📋 Received producers list:', message.data.producers);
@@ -295,6 +338,28 @@ export const useMediasoup = ({
         };
     }, [addMessageHandler, removeMessageHandler, consume, onRemoteStreamRemoved, userId]);
 
+    // ✅ Добавляем обработчик для обновления имен пользователей
+    useEffect(() => {
+        // Обновляем маппинг имен при изменении списка пользователей
+        const updateUserNameMapping = () => {
+            const users = useRoomStore.getState().users;
+            users.forEach(user => {
+                userNamesRef.current.set(user.id, user.username);
+            });
+        };
+
+        // Вызываем обновление при монтировании
+        updateUserNameMapping();
+
+        // Подписываемся на изменения в хранилище комнаты
+        // ✅ Исправлено: правильная подписка на Zustand store
+        const unsubscribe = useRoomStore.subscribe(updateUserNameMapping);
+
+        return () => {
+            unsubscribe();
+        };
+    }, []);
+
     // 5. Очистка
     const cleanup = useCallback(() => {
         producersRef.current.forEach((producer) => producer.close());
@@ -302,13 +367,13 @@ export const useMediasoup = ({
         sendTransportRef.current?.close();
         recvTransportRef.current?.close();
         deviceRef.current = null;
+        userNamesRef.current.clear(); // ✅ Очищаем маппинг при очистке
     }, []);
 
     // 6. Обработка ошибок
     useEffect(() => {
         const handleError = (message: ErrorMessage) => {
             console.error('❌ SFU Error:', message.data.message);
-            // addToast(message.data.message, 'error');
         };
 
         addMessageHandler('error', handleError);

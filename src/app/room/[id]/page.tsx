@@ -7,6 +7,7 @@ import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { useMediasoup } from "@/hooks/useMediasoup";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useChatPanel } from "@/hooks/useChatPanel";
 import RoomHeader from "@/components/RoomPage/RoomHeader";
 import VideoGrid from "@/components/RoomPage/VideoGrid";
 import ChatPanel from "@/components/RoomPage/ChatPanel";
@@ -14,6 +15,7 @@ import ChatPanel from "@/components/RoomPage/ChatPanel";
 export default function RoomPage() {
   const router = useRouter();
   const { stream: localStream } = useMediaStream();
+  const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
   const webSocket = useWebSocket(
     process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001"
@@ -22,7 +24,7 @@ export default function RoomPage() {
 
   // ✅ Передаем общий WebSocket в useRoomConnection
   const { roomId, sendChatMessage, leaveRoom } = useRoomConnection({
-    webSocket, // ✅ Передаем существующий экземпляр
+    webSocket,
   });
 
   // ✅ Извлекаем currentUserId из store
@@ -49,9 +51,12 @@ export default function RoomPage() {
     roomId,
     userId: currentUserId || "unknown",
     onRemoteStreamAdded: (stream, userId, username) => {
+      // ✅ Здесь теперь будет правильное имя пользователя
+      console.log(`🎥 Remote stream added for user ${userId} (${username})`);
       setRemoteStreams((prev) => [...prev, { userId, username, stream }]);
     },
     onRemoteStreamRemoved: (userId) => {
+      console.log(`🎥 Remote stream removed for user ${userId}`);
       setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
     },
     webSocket,
@@ -77,7 +82,7 @@ export default function RoomPage() {
         currentUserId
       );
     }
-  }, [isConnected, localStream, currentUserId, initializeMediasoup]); // ✅ currentUserId в зависимостях
+  }, [isConnected, localStream, currentUserId, initializeMediasoup]);
 
   // Очистка при выходе
   useEffect(() => {
@@ -85,8 +90,6 @@ export default function RoomPage() {
       cleanup();
     };
   }, [cleanup]);
-
-  // ... остальные функции (toggleMic, toggleVideo, handleLeaveRoom, openSettings) без изменений
 
   const toggleMic = useCallback(() => {
     if (localStream) {
@@ -116,18 +119,23 @@ export default function RoomPage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       <RoomHeader
         roomId={roomId}
         onToggleMic={toggleMic}
         onToggleVideo={toggleVideo}
         onLeaveRoom={handleLeaveRoom}
         onSettings={openSettings}
+        onToggleChat={toggleChat}
+        isChatOpen={isChatOpen}
+        hasNewMessages={hasNewMessages}
       />
 
       <div className="flex flex-1 overflow-hidden">
         <VideoGrid remoteStreams={remoteStreams} />
-        <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
+        {isChatOpen && (
+          <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
+        )}
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
   const params = useParams();
   const searchParams = useSearchParams();
   const roomId = params.id as string;
-  const username = searchParams.get('username') || 'Anonymous';
+  const username = searchParams.get('username') || 'Anonymous'; // ✅ Это наше имя пользователя
 
   const sessionId = useMemo(() => {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -82,9 +82,21 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
     };
 
     const handleUserLeft = (message: UserLeftMessage) => {
-      console.log('User left:', message.data.user);
-      const userIdToRemove = message.data.userId || message.data.user.id;
-      removeUser(userIdToRemove);
+      console.log('🚪 User left message received:', message);
+
+      // Теперь правильно извлекаем данные
+      const userIdToRemove = message.data.userId;
+      const username = message.data.username || 'Unknown';
+
+      console.log(`🚪 User left - userId: ${userIdToRemove}, username: ${username}`);
+
+      if (userIdToRemove) {
+        console.log(`🧹 Removing user ${userIdToRemove} from room store`);
+        removeUser(userIdToRemove);
+        // onRemoteStreamRemoved будет вызван через mediasoup при закрытии producer'ов
+      } else {
+        console.warn('⚠️ Cannot remove user: no userId in message', message);
+      }
     };
 
     const handleJoined = (message: JoinedMessage) => {
@@ -108,26 +120,20 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
 
       setUsers(users);
 
-      // ✅ Правильное преобразование истории чата
-      // console.log('setChatMessages_1', message)
-      // if (message.data.chatHistory) {
-      //   console.log('setChatMessages_2', message.data)
-      //   setChatMessages(message.data.chatHistory.map(msg => ({
-      //     id: msg.data.timestamp,
-      //     from: msg.data.from,
-      //     text: msg.data.text,
-      //     timestamp: new Date(msg.data.timestamp)
-      //   })));
-      // }
-
       if (message.data.sessionId) {
         sessionStorage.setItem(`session_${roomId}`, message.data.sessionId);
       }
     };
 
     const handleUserConnectionStatus = (message: UserConnectionStatusMessage) => {
-      console.log('User connection status:', message.data.userId, message.data.isConnected);
+      console.log('🔌 User connection status:', message.data.userId, message.data.isConnected);
       updateUserConnectionStatus(message.data.userId, message.data.isConnected);
+
+      // Если пользователь отключился, удаляем его поток
+      if (!message.data.isConnected) {
+        console.log(`🔌 User ${message.data.userId} disconnected, removing stream`);
+        // onRemoteStreamRemoved будет вызван через механизм mediasoup
+      }
     };
 
     const handleUsersUpdated = (message: UsersUpdatedMessage) => {
@@ -138,23 +144,35 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
     const handleChatMessage = (message: ChatMessageData) => {
       console.log('Received chat message:', message.data);
       console.log('Message:', message);
+
+      // ✅ Определяем, наше ли это сообщение
+      const isOwnMessage = message.data.from === username;
+      const displayName = isOwnMessage ? 'You' : message.data.from;
+
       addChatMessage({
-        id: message.data.timestamp, // ✅ Используем timestamp как ID
-        from: message.data.from,
+        id: message.data.timestamp,
+        from: displayName, // ✅ Используем "You" для своих сообщений
         text: message.data.text,
-        timestamp: new Date(message.data.timestamp) // ✅ Преобразуем строку в Date
+        timestamp: new Date(message.data.timestamp)
       });
     };
 
     const handleChatHistory = (message: ChatHistoryMessage) => {
-      console.log('Received chat data:', message);
       console.log('Received chat history:', message.data);
-      setChatMessages(message.data.map(msg => ({
-        id: msg.id,
-        from: msg.from,
-        text: msg.text,
-        timestamp: new Date(msg.timestamp)
-      })));
+      const processedMessages = message.data.map(msg => {
+        // ✅ Определяем, наше ли это сообщение из истории
+        const isOwnMessage = msg.from === username;
+        const displayName = isOwnMessage ? 'You' : msg.from;
+
+        return {
+          id: msg.id,
+          from: displayName, // ✅ Используем "You" для своих сообщений
+          text: msg.text,
+          timestamp: new Date(msg.timestamp)
+        };
+      });
+
+      setChatMessages(processedMessages);
     };
 
     const handleError = (message: ErrorMessage) => {
@@ -180,7 +198,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
       removeMessageHandler('chat-history', handleChatHistory as (message: ChatHistoryMessage) => void);
       removeMessageHandler('error', handleError as (message: ErrorMessage) => void);
     };
-  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers, updateUserConnectionStatus, roomId, addChatMessage, setChatMessages]);
+  }, [addMessageHandler, removeMessageHandler, addUser, removeUser, setUsers, updateUserConnectionStatus, roomId, addChatMessage, setChatMessages, username]); // ✅ Добавили username в зависимости
 
   // Отправка сообщения серверу о присоединении к комнате
   useEffect(() => {
@@ -198,9 +216,9 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
 
       // ✅ Запрашиваем историю чата после присоединения
       setTimeout(() => {
-        const historyMessage: GetChatHistoryMessage = { // ✅ Указываем правильный тип
+        const historyMessage: GetChatHistoryMessage = {
           type: 'get-chat-history',
-          data: {}, // ✅ Пустой объект
+          data: {},
         };
         sendMessage(historyMessage);
       }, 100);
@@ -214,7 +232,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
     const chatMessage: ChatMessageData = {
       type: 'chat-message',
       data: {
-        from: username,
+        from: username, // ✅ Отправляем наше настоящее имя
         text,
         timestamp: new Date().toISOString(),
       },
