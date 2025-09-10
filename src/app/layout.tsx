@@ -24,6 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             draggable
             pauseOnHover
             theme="colored"
+            limit={3}
           />
         </MediaStreamProvider>
       </body>

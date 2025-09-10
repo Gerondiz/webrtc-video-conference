@@ -84,7 +84,7 @@ export const useRoomConnection = ({ webSocket }: { webSocket: UseWebSocketReturn
     const handleUserLeft = (message: UserLeftMessage) => {
       console.log('🚪 User left message received:', message);
 
-      // Теперь правильно извлекаем данные
+      // Правильно извлекаем данные
       const userIdToRemove = message.data.userId;
       const username = message.data.username || 'Unknown';
 

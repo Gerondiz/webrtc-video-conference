@@ -25,7 +25,7 @@ export interface UserJoinedMessage {
 export interface UserLeftMessage {
   type: 'user-left';
   data: {
-    username: User;
+    username: string;
     userId?: string;
   };
 }

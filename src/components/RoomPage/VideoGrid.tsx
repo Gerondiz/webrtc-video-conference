@@ -14,41 +14,53 @@ interface VideoGridProps {
 
 export default function VideoGrid({ remoteStreams }: VideoGridProps) {
   const { stream: localStream } = useMediaStream();
+  const users = useRoomStore(state => state.users); // Получаем список пользователей
 
   const isVideoMuted = localStream
     ? !localStream.getVideoTracks().some((track) => track.enabled)
     : true;
 
   // Функция для проверки активности потока
-  const isStreamActive = (stream: MediaStream): boolean => {
+  const isStreamActive = (stream: MediaStream, userId: string, username: string): boolean => {
     try {
-      // Проверяем, есть ли активные треки
+      // Проверяем, есть ли треки вообще
       const tracks = stream.getTracks();
-      const hasActiveTracks = tracks.some(track => {
-        const isActive = track.readyState === 'live';
-        console.log(`🔍 Track ${track.kind} readyState: ${track.readyState}, active: ${isActive}`);
-        return isActive;
+      console.log(`🔍 [${userId} (${username})] Stream tracks count: ${tracks.length}`);
+      
+      if (tracks.length === 0) {
+        console.log(`🔍 [${userId} (${username})] Stream has no tracks - inactive`);
+        return false;
+      }
+      
+      // Проверяем состояние каждого трека
+      let activeTracks = 0;
+      tracks.forEach(track => {
+        console.log(`🔍 [${userId} (${username})] Track ${track.kind} - readyState: ${track.readyState}, muted: ${track.muted}`);
+        if (track.readyState === 'live') { // Убираем проверку muted для видео
+          activeTracks++;
+        }
       });
       
-      console.log(`🔍 Stream check - total tracks: ${tracks.length}, active: ${hasActiveTracks}`);
-      return hasActiveTracks && tracks.length > 0;
+      const isActive = activeTracks > 0;
+      console.log(`🔍 [${userId} (${username})] Active tracks: ${activeTracks}, stream active: ${isActive}`);
+      return isActive;
     } catch (error) {
-      console.error('Error checking stream status:', error);
+      console.error(`❌ [${userId} (${username})] Error checking stream status:`, error);
       return false;
     }
   };
 
-  // Фильтруем только активные потоки
-const activeRemoteStreams = remoteStreams.filter(remote => {
+  // Фильтруем только активные потоки с проверкой по списку пользователей
+  const activeRemoteStreams = remoteStreams.filter(remote => {
     // Проверяем, есть ли такой пользователь в списке активных пользователей
-    const userExists = useRoomStore.getState().users.some(user => 
-        user.id === remote.userId && user.isConnected
+    const userExists = users.some(user => 
+      user.id === remote.userId && user.isConnected
     );
     
     const isActive = userExists && remote.stream && isStreamActive(remote.stream, remote.userId, remote.username);
     console.log(`🔍 [${remote.userId} (${remote.username})] User exists: ${userExists}, Stream active: ${isActive}`);
     return isActive;
-});
+  });
 
   console.log(`📊 Total remote streams: ${remoteStreams.length}, Active: ${activeRemoteStreams.length}`);
 
