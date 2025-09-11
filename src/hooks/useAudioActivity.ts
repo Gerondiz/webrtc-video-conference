@@ -1,49 +1,51 @@
-// src/hooks/useAudioActivity.ts (новый хук для определения активности речи)
+// src/hooks/useAudioActivity.ts
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
 interface AudioActivityOptions {
-  threshold?: number; // Порог чувствительности (0-1)
-  interval?: number;  // Интервал проверки (мс)
+  threshold?: number;
 }
 
 export const useAudioActivity = (
   stream: MediaStream | null, 
   options: AudioActivityOptions = {}
 ) => {
-  const { threshold = 0.05, interval = 100 } = options;
+  const { threshold = 0.05 } = options;
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const animationFrameRef = useRef<number>(0);
 
   useEffect(() => {
     if (!stream) return;
 
     const initAudioAnalysis = async () => {
       try {
-        // Создаем AudioContext
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const audioContext = audioContextRef.current;
+        // Проверяем поддержку AudioContext
+        if (typeof window === 'undefined') return;
+        
+        // Явно указываем тип для AudioContext
+        const AudioContextConstructor: typeof AudioContext = 
+          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        
+        if (!AudioContextConstructor) {
+          console.warn('AudioContext not supported');
+          return;
+        }
 
-        // Получаем аудио трек
+        // Создаем экземпляр с правильным типом
+        const audioContext: AudioContext = new AudioContextConstructor();
+        audioContextRef.current = audioContext;
+
         const audioTracks = stream.getAudioTracks();
         if (audioTracks.length === 0) return;
 
-        // Создаем источник
         const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyserRef.current = analyser;
+        analyser.fftSize = 256;
         
-        // Создаем анализатор
-        analyserRef.current = audioContext.createAnalyser();
-        analyserRef.current.fftSize = 256;
-        
-        // Подключаем
-        source.connect(analyserRef.current);
-        
-        // Создаем массив для данных
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        dataArrayRef.current = new Uint8Array(bufferLength);
+        source.connect(analyser);
       } catch (error) {
         console.warn('Audio analysis not available:', error);
       }
@@ -52,35 +54,49 @@ export const useAudioActivity = (
     initAudioAnalysis();
 
     return () => {
-      if (audioContextRef.current) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         audioContextRef.current.close();
       }
     };
   }, [stream]);
 
-  // Проверяем уровень звука
+  // Анализ аудио в реальном времени
   useEffect(() => {
-    if (!analyserRef.current || !dataArrayRef.current) return;
+    if (!analyserRef.current) return;
 
-    const checkAudioLevel = () => {
-      if (!analyserRef.current || !dataArrayRef.current) return;
+    const analyzeAudio = () => {
+      const analyser = analyserRef.current;
+      if (!analyser) return;
       
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-      
-      // Вычисляем средний уровень
-      let sum = 0;
-      for (let i = 0; i < dataArrayRef.current.length; i++) {
-        sum += dataArrayRef.current[i];
+      try {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = dataArray.length > 0 ? sum / dataArray.length / 255 : 0;
+        
+        setIsSpeaking(avg > threshold);
+      } catch (error) {
+        console.warn('Error in audio analysis:', error);
       }
-      const avg = sum / dataArrayRef.current.length / 255; // Нормализуем до 0-1
       
-      setAudioLevel(avg);
-      setIsSpeaking(avg > threshold);
+      animationFrameRef.current = requestAnimationFrame(analyzeAudio);
     };
 
-    const intervalId = setInterval(checkAudioLevel, interval);
-    return () => clearInterval(intervalId);
-  }, [threshold, interval]);
+    animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [threshold]);
 
-  return { isSpeaking, audioLevel };
+  return { isSpeaking };
 };

@@ -5,23 +5,23 @@ import {
   Video,
   VideoOff,
   PhoneOff,
-  Settings,
   Users,
   Circle,
   MessageSquare,
 } from "lucide-react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import { useRoomStore } from "@/stores/useRoomStore";
+import SettingsMenu from "@/components/RoomPage/SettingsMenu";
+import { useState } from "react";
 
 interface RoomHeaderProps {
   roomId: string;
   onToggleMic: () => void;
   onToggleVideo: () => void;
   onLeaveRoom: () => void;
-  onSettings: () => void;
   onToggleChat: () => void;
   isChatOpen: boolean;
-  hasNewMessages?: boolean; // ✅ Добавляем пропс
+  hasNewMessages?: boolean;
 }
 
 export default function RoomHeader({
@@ -29,14 +29,15 @@ export default function RoomHeader({
   onToggleMic,
   onToggleVideo,
   onLeaveRoom,
-  onSettings,
   onToggleChat,
   isChatOpen,
-  hasNewMessages = false // ✅ Деструктуризация с дефолтным значением
+  hasNewMessages = false
 }: RoomHeaderProps) {
   const { stream: localStream } = useMediaStream();
   const { wsConnected, wsConnecting, users, isMicMuted, isCameraOff } =
     useRoomStore();
+  
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Получаем текущее состояние микрофона и камеры из потока
   const actualIsMicMuted = localStream
@@ -142,14 +143,11 @@ export default function RoomHeader({
           {actualIsVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
         </button>
 
-        <button
-          onClick={onSettings}
-          className="p-2 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 shadow-md"
-          title="Settings"
-          disabled={!localStream}
-        >
-          <Settings size={20} />
-        </button>
+        <SettingsMenu 
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onOpen={() => setIsSettingsOpen(true)}
+        />
 
         <button
           onClick={onLeaveRoom}

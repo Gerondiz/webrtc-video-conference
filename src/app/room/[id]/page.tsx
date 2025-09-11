@@ -9,7 +9,8 @@ import { useRoomStore } from "@/stores/useRoomStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useChatPanel } from "@/hooks/useChatPanel";
 import RoomHeader from "@/components/RoomPage/RoomHeader";
-import VideoGrid from "@/components/RoomPage/VideoGrid";
+// import VideoGrid from "@/components/RoomPage/VideoGrid";
+import AdaptiveVideoGrid from '@/components/RoomPage/AdaptiveVideoGrid';
 import ChatPanel from "@/components/RoomPage/ChatPanel";
 
 export default function RoomPage() {
@@ -118,25 +119,24 @@ export default function RoomPage() {
     console.log("Open settings");
   }, []);
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
-      <RoomHeader
-        roomId={roomId}
-        onToggleMic={toggleMic}
-        onToggleVideo={toggleVideo}
-        onLeaveRoom={handleLeaveRoom}
-        onSettings={openSettings}
-        onToggleChat={toggleChat}
-        isChatOpen={isChatOpen}
-        hasNewMessages={hasNewMessages}
-      />
+return (
+  <div className="flex flex-col h-screen bg-gray-900">
+    <RoomHeader
+      roomId={roomId}
+      onToggleMic={toggleMic}
+      onToggleVideo={toggleVideo}
+      onLeaveRoom={handleLeaveRoom}
+      onToggleChat={toggleChat}
+      isChatOpen={isChatOpen}
+      hasNewMessages={hasNewMessages}
+    />
 
-      <div className="flex flex-1 overflow-hidden">
-        <VideoGrid remoteStreams={remoteStreams} />
-        {isChatOpen && (
-          <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
-        )}
-      </div>
+    <div className="flex flex-1 overflow-hidden">
+      <AdaptiveVideoGrid remoteStreams={remoteStreams} />
+      {isChatOpen && (
+        <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
+      )}
     </div>
-  );
+  </div>
+);
 }
