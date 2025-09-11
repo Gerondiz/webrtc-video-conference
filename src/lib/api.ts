@@ -28,7 +28,7 @@ interface ApiError extends AxiosError {
 
 const createApiClient = (): AxiosInstance => {
   const instance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_SIGNALING_SERVER,
+    baseURL: process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com',
     timeout: 30000,
     headers: {
       'Content-Type': 'application/json',

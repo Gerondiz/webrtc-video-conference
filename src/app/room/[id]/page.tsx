@@ -19,7 +19,7 @@ export default function RoomPage() {
   const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
   const webSocket = useWebSocket(
-    process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001"
+    process.env.NEXT_PUBLIC_WS_URL || "wss://backend-mediasoup.onrender.com/wss"
   );
   const { isConnected } = webSocket;
 
@@ -115,9 +115,9 @@ export default function RoomPage() {
     router.push("/");
   }, [leaveRoom, router]);
 
-  const openSettings = useCallback(() => {
-    console.log("Open settings");
-  }, []);
+  // const openSettings = useCallback(() => {
+  //   console.log("Open settings");
+  // }, []);
 
 return (
   <div className="flex flex-col h-screen bg-gray-900">
