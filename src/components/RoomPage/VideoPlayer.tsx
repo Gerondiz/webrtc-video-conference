@@ -8,7 +8,7 @@ interface VideoPlayerProps {
   isLocal: boolean;
 }
 
-export default function VideoPlayer({ stream, username, isLocal }: VideoPlayerProps) {
+export default function VideoPlayer({ stream, isLocal }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {

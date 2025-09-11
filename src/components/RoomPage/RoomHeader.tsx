@@ -9,7 +9,6 @@ import {
   Users,
   Circle,
   MessageSquare,
-  MessageSquareDot
 } from "lucide-react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import { useRoomStore } from "@/stores/useRoomStore";
