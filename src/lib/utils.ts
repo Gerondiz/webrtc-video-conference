@@ -5,10 +5,9 @@ export const generateUsername = (): string => {
   const adjectives = ['Happy', 'Sunny', 'Clever', 'Brave', 'Calm', 'Swift', 'Gentle', 'Wise', 'Bright', 'Free'];
   const nouns = ['Tiger', 'Eagle', 'Dolphin', 'Panda', 'Fox', 'Wolf', 'Hawk', 'Lion', 'Owl', 'Bear'];
   const randomNum = Math.floor(Math.random() * 1000);
-  
-  return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${
-    nouns[Math.floor(Math.random() * nouns.length)]
-  }${randomNum}`;
+
+  return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]
+    }${randomNum}`;
 };
 
 export const delay = (ms: number): Promise<void> => {
@@ -19,7 +18,7 @@ export async function checkMediaDevices(): Promise<MediaDevicesStatus> {
   try {
     // Запрашиваем разрешение на доступ к устройствам, чтобы получить полную информацию
     await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    
+
     // Получаем список всех доступных устройств
     const devices = await navigator.mediaDevices.enumerateDevices();
 
@@ -41,13 +40,13 @@ export async function checkMediaDevices(): Promise<MediaDevicesStatus> {
     return { hasCamera, hasMicrophone };
   } catch (error) {
     console.error('Ошибка при проверке устройств:', error);
-    
+
     // Если пользователь отказал в доступе, все равно пытаемся определить устройства
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const hasCamera = devices.some(device => device.kind === 'videoinput');
       const hasMicrophone = devices.some(device => device.kind === 'audioinput');
-      
+
       return { hasCamera, hasMicrophone };
     } catch (err) {
       console.error('Не удалось получить список устройств:', err);
@@ -59,11 +58,11 @@ export async function checkMediaDevices(): Promise<MediaDevicesStatus> {
 export async function getMediaDevicesWithPermissions(constraints: MediaStreamConstraints): Promise<MediaStream> {
   try {
     console.log('Запрашиваем доступ с constraints:', constraints);
-    
+
     // Запрашиваем доступ к медиаустройствам
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     console.log('Доступ к медиапотоку получен:', stream);
-    
+
     return stream;
   } catch (error) {
     console.error('Ошибка при получении доступа к медиаустройствам:', error);
@@ -76,8 +75,8 @@ export async function getMediaDevicesWithPermissions(constraints: MediaStreamCon
  */
 export const checkWebRTCSupport = (): boolean => {
   return !!(
-    navigator.mediaDevices && 
-    'getUserMedia' in navigator.mediaDevices && 
+    navigator.mediaDevices &&
+    'getUserMedia' in navigator.mediaDevices &&
     'RTCPeerConnection' in window
   );
 };
@@ -92,14 +91,39 @@ export const testTURNConnection = async (
 ): Promise<string[]> => {
   return new Promise((resolve, reject) => {
     const candidates: string[] = [];
-    
+
     try {
       const peerConnection = new RTCPeerConnection({
         iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: turnServer, username, credential },
+          {
+            urls: "stun:stun.relay.metered.ca:80",
+          },
+          {
+            urls: "turn:global.relay.metered.ca:80",
+            username: "62ebcffbcf6c87c9ed6ce75c",
+            credential: "6QxuV6wxCX5bEgL6",
+          },
+          {
+            urls: "turn:global.relay.metered.ca:80?transport=tcp",
+            username: "62ebcffbcf6c87c9ed6ce75c",
+            credential: "6QxuV6wxCX5bEgL6",
+          },
+          {
+            urls: "turn:global.relay.metered.ca:443",
+            username: "62ebcffbcf6c87c9ed6ce75c",
+            credential: "6QxuV6wxCX5bEgL6",
+          },
+          {
+            urls: "turns:global.relay.metered.ca:443?transport=tcp",
+            username: "62ebcffbcf6c87c9ed6ce75c",
+            credential: "6QxuV6wxCX5bEgL6",
+          },
         ],
-        iceCandidatePoolSize: 10,
+        // iceServers: [
+        //   { urls: 'stun:stun.l.google.com:19302' },
+        //   { urls: turnServer, username, credential },
+        // ],
+        iceCandidatePoolSize: 3,
       });
 
       peerConnection.onicecandidate = (event) => {
@@ -125,7 +149,7 @@ export const testTURNConnection = async (
       peerConnection.createOffer()
         .then(offer => peerConnection.setLocalDescription(offer))
         .catch(reject);
-        
+
     } catch (error) {
       reject(error);
     }
@@ -142,17 +166,17 @@ export const getAvailableDevices = async (): Promise<{
   try {
     // Сначала запрашиваем разрешение, чтобы получить полную информацию об устройствах
     await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    
+
     const devices = await navigator.mediaDevices.enumerateDevices();
-    
-    const videoDevices = devices.filter(device => 
+
+    const videoDevices = devices.filter(device =>
       device.kind === 'videoinput' && device.deviceId !== ''
     );
-    
-    const audioDevices = devices.filter(device => 
+
+    const audioDevices = devices.filter(device =>
       device.kind === 'audioinput' && device.deviceId !== ''
     );
-    
+
     return { videoDevices, audioDevices };
   } catch (error) {
     console.error('Ошибка при получении списка устройств:', error);
