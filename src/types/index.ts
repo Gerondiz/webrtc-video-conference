@@ -1,3 +1,4 @@
+//types.ts
 import * as mediasoupClient from 'mediasoup-client';
 
 type IceCandidate = mediasoupClient.types.IceCandidate;
