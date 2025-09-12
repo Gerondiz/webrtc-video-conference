@@ -67,9 +67,8 @@ export const useMediasoup = ({
     // --- Добавлено: Функция для получения ICE серверов от SFU ---
     const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
         try {
-            // Определяем базовый URL SFU из WebSocket URL
-            const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://backend-mediasoup.onrender.com/wss";
-            const sfuBaseUrl = wsUrl.replace(/^wss?:\/\//, 'http://').replace(/\/wss?$/, '');
+            // Используем NEXT_PUBLIC_SIGNALING_SERVER, так как он уже содержит базовый HTTPS URL
+            const sfuBaseUrl = process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com';
             const iceServersUrl = `${sfuBaseUrl}/ice-servers`;
 
             console.log(`🔧 Fetching ICE servers from: ${iceServersUrl}`);
@@ -83,6 +82,10 @@ export const useMediasoup = ({
         } catch (error) {
             console.error('❌ Failed to fetch ICE servers from SFU:', error);
             // Можно вернуть пустой массив или резервные сервера
+            // Например, только Metered TURN для TCP, который может работать в корпоративной сети
+            // return [
+            //   { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "62ebcffbcf6c87c9ed6ce75c", credential: "6QxuV6wxCX5bEgL6" }
+            // ];
             return [];
         }
     }, []);
@@ -100,7 +103,7 @@ export const useMediasoup = ({
                 return Promise.reject(new Error('User ID not set'));
             }
 
- return new Promise<Transport>((resolve) => {
+            return new Promise<Transport>((resolve) => {
                 const handler = (message: WebRtcTransportCreatedMessage) => {
                     // ... логика обработки message ...
 
@@ -290,7 +293,7 @@ export const useMediasoup = ({
                 console.log('🔍 Fetching ICE servers before device initialization...');
                 iceServersRef.current = await fetchIceServers();
                 if (iceServersRef.current.length === 0) {
-                     console.warn('⚠️ No ICE servers fetched. WebRTC connection might fail behind NAT/Firewall.');
+                    console.warn('⚠️ No ICE servers fetched. WebRTC connection might fail behind NAT/Firewall.');
                 }
             }
             // ---
@@ -338,11 +341,11 @@ export const useMediasoup = ({
             for (const track of localStream.getTracks()) {
                 const kind = track.kind as 'audio' | 'video';
                 if (sendTransportRef.current) { // Проверка на null
-                     const producer = await sendTransportRef.current.produce({ track });
-                     console.log(`🎤 Created ${kind} producer:`, producer.id);
-                     producersRef.current.set(producer.id, producer);
+                    const producer = await sendTransportRef.current.produce({ track });
+                    console.log(`🎤 Created ${kind} producer:`, producer.id);
+                    producersRef.current.set(producer.id, producer);
                 } else {
-                     console.error('❌ Send transport is not available for producing');
+                    console.error('❌ Send transport is not available for producing');
                 }
             }
 
