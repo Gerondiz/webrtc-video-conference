@@ -12,7 +12,7 @@ type Producer = mediasoupClient.types.Producer;
 type Consumer = mediasoupClient.types.Consumer;
 type IceCandidate = mediasoupClient.types.IceCandidate;
 type DtlsParameters = mediasoupClient.types.DtlsParameters;
-type IceParameters = mediasoupClient.types.IceParameters; // Добавлено
+type IceParameters = mediasoupClient.types.IceParameters;
 
 // Импорты типов сообщений
 import {
@@ -28,8 +28,6 @@ import {
     ProducerClosedMessage,
     ProducersListMessage,
     ErrorMessage,
-    // Добавлено
-    IceParameters as IceParametersMessage,
 } from '@/types';
 
 interface MediasoupOptions {
@@ -68,7 +66,7 @@ export const useMediasoup = ({
     const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
         try {
             // Используем NEXT_PUBLIC_SIGNALING_SERVER, так как он уже содержит базовый HTTPS URL
-            const sfuBaseUrl = process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com';
+            const sfuBaseUrl = (process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com').trim();
             const iceServersUrl = `${sfuBaseUrl}/ice-servers`;
 
             console.log(`🔧 Fetching ICE servers from: ${iceServersUrl}`);
@@ -81,18 +79,16 @@ export const useMediasoup = ({
             return iceServers;
         } catch (error) {
             console.error('❌ Failed to fetch ICE servers from SFU:', error);
-            // Можно вернуть пустой массив или резервные сервера
-            // Например, только Metered TURN для TCP, который может работать в корпоративной сети
-            // return [
-            //   { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "62ebcffbcf6c87c9ed6ce75c", credential: "6QxuV6wxCX5bEgL6" }
-            // ];
-            return [];
+            // Возвращаем резервный TURN сервер Metered для TCP
+            return [
+              { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "62ebcffbcf6c87c9ed6ce75c", credential: "6QxuV6wxCX5bEgL6" }
+            ];
         }
     }, []);
     // ---
 
 
-    // 1. Создание транспорта (обновлено)
+    // 1. Создание транспорта
     const createTransport = useCallback(
         async (direction: 'send' | 'recv'): Promise<Transport> => {
             console.log(`🚀 Creating ${direction} transport...`);
@@ -103,20 +99,19 @@ export const useMediasoup = ({
                 return Promise.reject(new Error('User ID not set'));
             }
 
-            return new Promise<Transport>((resolve) => {
+            return new Promise<Transport>((resolve, reject) => { // Добавлен reject
                 const handler = (message: WebRtcTransportCreatedMessage) => {
-                    // ... логика обработки message ...
-
+                    console.log(`✅ Received webRtcTransportCreated for ${message.data.direction}:`, message.data.transportId);
                     if (message.type === 'webRtcTransportCreated' && message.data.direction === direction) {
                         removeMessageHandler('webRtcTransportCreated', handler);
 
-                        // Подготовка опций транспорта
+                        // --- Обновлено: Подготовка опций транспорта с iceServers ---
                         const transportOptions: mediasoupClient.types.TransportOptions = {
                             id: message.data.transportId,
                             iceParameters: message.data.iceParameters as IceParameters,
                             iceCandidates: message.data.iceCandidates as IceCandidate[],
                             dtlsParameters: message.data.dtlsParameters as DtlsParameters,
-                            iceServers: iceServersRef.current,
+                            iceServers: iceServersRef.current, // Передаем iceServers
                         };
 
                         console.log('🔧 Creating transport with options (including iceServers):', transportOptions);
@@ -127,21 +122,26 @@ export const useMediasoup = ({
                                 direction === 'send'
                                     ? deviceRef.current!.createSendTransport(transportOptions)
                                     : deviceRef.current!.createRecvTransport(transportOptions);
-                        } catch (creationError: unknown) { // Указываем тип unknown
+                        } catch (creationError: unknown) {
                             console.error(`❌ Error creating ${direction} transport:`, creationError);
-                            // Проверяем, является ли ошибка объектом Error перед доступом к .message
                             const errorMessage = creationError instanceof Error ? creationError.message : String(creationError);
                             sendMessage({
                                 type: 'error',
                                 data: { message: `Transport creation failed: ${errorMessage}` }
                             } as ErrorMessage);
-                            return; // Выходим из обработчика
+                            reject(new Error(`Transport creation failed: ${errorMessage}`)); // Reject promise
+                            return;
                         }
 
-                        // --- Исправленные обработчики событий ---
-                        // Для событий, которые поддерживаются mediasoup-client, используем их напрямую
                         transport.on('connect', ({ dtlsParameters }, callback) => {
-                            // ... логика connect ...
+                            console.log('🔗 Connecting transport:', message.data.transportId);
+                            console.log('sendMessage: connect-transport');
+                            const connectMessage: ConnectTransportMessage = {
+                                type: 'connect-transport',
+                                data: { transportId: message.data.transportId, dtlsParameters },
+                            };
+                            sendMessage(connectMessage);
+                            callback();
                         });
 
                         transport.on('connectionstatechange', (state) => {
@@ -151,62 +151,59 @@ export const useMediasoup = ({
                             }
                         });
 
-                        // Для событий WebRTC, которые могут не быть напрямую доступны через mediasoup-client,
-                        // но доступны через underlying peerconnection, можно использовать getAppData
-                        // или обернуть в any. Однако, часто они работают.
-                        // Попробуем сначала напрямую, если TypeScript ругается, обернем в any или используем getAppData.
-
-                        // Вариант 1: Попробовать напрямую (может вызвать ошибку TS)
-                        // transport.on('iceconnectionstatechange', (state) => {
-                        //     console.log(`🧊 Transport (${direction}) ICE connection state changed to:`, state);
-                        //     if (state === 'failed') {
-                        //         console.error(`🧊 Transport (${direction}) ICE connection failed! State:`, state);
-                        //     }
-                        // });
-
-                        // Вариант 2: Использовать getAppData для доступа к underlying peerconnection
-                        // Это более сложный и менее надежный способ, но иногда единственный.
-
-                        // Вариант 3: Приведение к any (работает, но теряем проверку типов)
-                        // (transport as any).on('iceconnectionstatechange', (state: string) => {
-                        //     console.log(`🧊 Transport (${direction}) ICE connection state changed to:`, state);
-                        //     if (state === 'failed') {
-                        //         console.error(`🧊 Transport (${direction}) ICE connection failed! State:`, state);
-                        //     }
-                        // });
-
-                        // (transport as any).on('icestatechange', (state: string) => {
-                        //     console.log(`🧊🧊 Transport (${direction}) ICE gathering state changed to:`, state);
-                        // });
-
-                        // (transport as any).on('icecandidate', (candidate: RTCIceCandidate) => {
-                        //     console.log(`🧊 Candidate gathered for transport (${direction}):`, candidate);
-                        // });
-
+                        // Добавляем обработчики для диагностики ICE
                         transport.on('icecandidateerror', (event) => {
-                            // event может быть кастомным для mediasoup или стандартным
                             console.warn(`🧊 ICE Candidate Error for transport (${direction}):`, event);
                         });
 
                         if (direction === 'send') {
                             transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
-                                // ... логика produce ...
+                                try {
+                                    console.log('📤 Sending produce message with rtpParameters:', rtpParameters);
+
+                                    const produceMessage: ProduceMessage = {
+                                        type: 'produce',
+                                        data: {
+                                            transportId: message.data.transportId,
+                                            kind,
+                                            rtpParameters,
+                                        },
+                                    };
+                                    sendMessage(produceMessage);
+
+                                    const producedHandler = (msg: ProducedMessage) => {
+                                        if (msg.type === 'produced') {
+                                            removeMessageHandler('produced', producedHandler);
+                                            callback({ id: msg.data.producerId });
+                                        }
+                                    };
+                                    addMessageHandler('produced', producedHandler);
+                                } catch (error: unknown) {
+                                    const err = error instanceof Error ? error : new Error('Unknown error');
+                                    errback(err);
+                                }
                             });
                         }
-                        // --- Конец исправленных обработчиков ---
 
                         resolve(transport);
                     }
                 };
 
                 addMessageHandler('webRtcTransportCreated', handler);
-                // ... остальная логика ...
+
+                // --- КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Отправка сообщения на сервер ---
+                const createMessage: CreateTransportMessage = {
+                    type: 'create-transport',
+                    data: { direction },
+                };
+                sendMessage(createMessage);
+                // --- КОНЕЦ КРИТИЧЕСКОГО ИЗМЕНЕНИЯ ---
             });
         },
         [sendMessage, addMessageHandler, removeMessageHandler, userId]
     );
 
-    // 2. Подписка на поток (без изменений)
+    // 2. Подписка на поток
     const consume = useCallback(
         async (producerId: string, producerUserId: string): Promise<void> => {
             console.log(`🎧 Attempting to consume producer ${producerId} from user ${producerUserId}...`);
@@ -262,9 +259,7 @@ export const useMediasoup = ({
 
                             const stream = remoteStreamsRef.current.get(producerUserId);
                             if (stream) {
-                                stream.getTracks().forEach(track => {
-                                    track.stop();
-                                });
+                                stream.getTracks().forEach(track => track.stop());
                                 remoteStreamsRef.current.delete(producerUserId);
                             }
                         });
@@ -279,8 +274,7 @@ export const useMediasoup = ({
         [sendMessage, addMessageHandler, removeMessageHandler, onRemoteStreamAdded, onRemoteStreamRemoved]
     );
 
-
-    // 3. Инициализация (обновлена)
+    // 3. Инициализация
     const initializeMediasoup = useCallback(async () => {
         if (!localStream) {
             console.warn('⚠️ Cannot initialize mediasoup: localStream is null');
@@ -298,8 +292,7 @@ export const useMediasoup = ({
             }
             // ---
 
-            // Получаем rtpCapabilities (обычно от сервера, но тут захардкожено как в вашем коде)
-            // В реальном приложении их следует получить через WebSocket после 'join-room'
+            // Захардкоженные rtpCapabilities (как в вашем коде)
             const rtpCapabilities: RtpCapabilities = {
                 codecs: [
                     {
@@ -333,14 +326,16 @@ export const useMediasoup = ({
             await deviceRef.current.load({ routerRtpCapabilities: rtpCapabilities });
             console.log('✅ Mediasoup Device loaded');
 
+            // --- КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Добавлен await ---
             sendTransportRef.current = await createTransport('send');
             console.log('✅ Send transport created');
             recvTransportRef.current = await createTransport('recv');
             console.log('✅ Recv transport created');
+            // --- КОНЕЦ КРИТИЧЕСКОГО ИЗМЕНЕНИЯ ---
 
             for (const track of localStream.getTracks()) {
                 const kind = track.kind as 'audio' | 'video';
-                if (sendTransportRef.current) { // Проверка на null
+                if (sendTransportRef.current) {
                     const producer = await sendTransportRef.current.produce({ track });
                     console.log(`🎤 Created ${kind} producer:`, producer.id);
                     producersRef.current.set(producer.id, producer);
@@ -354,7 +349,85 @@ export const useMediasoup = ({
         } catch (error) {
             console.error('Error initializing mediasoup:', error);
         }
-    }, [localStream, createTransport, sendMessage, fetchIceServers]); // Добавлены зависимости
+    }, [localStream, createTransport, sendMessage, fetchIceServers]); // Обновлены зависимости
+
+    // 4. Обработчики сообщений
+    useEffect(() => {
+        const handleNewProducer = (message: NewProducerMessage) => {
+            const { producerId, userId: producerUserId } = message.data;
+            if (producerUserId !== userId) {
+                consume(producerId, producerUserId);
+            }
+        };
+
+        const handleProducerClosed = (message: ProducerClosedMessage) => {
+            const { producerId, userId: producerUserId } = message.data;
+            console.log(`🔚 [${producerUserId}] Producer closed notification: ${producerId}`);
+
+            let consumerToClose: Consumer | undefined;
+            let consumerId: string | undefined;
+
+            consumersRef.current.forEach((consumer, id) => {
+                if (consumer.producerId === producerId) {
+                    consumerToClose = consumer;
+                    consumerId = id;
+                }
+            });
+
+            if (consumerToClose && consumerId) {
+                console.log(`🔚 [${producerUserId}] Closing consumer ${consumerId} for producer ${producerId}`);
+                consumerToClose.close();
+            } else {
+                console.log(`🔚 [${producerUserId}] No active consumer, cleaning up stream directly`);
+                const stream = remoteStreamsRef.current.get(producerUserId);
+                if (stream) {
+                    console.log(`🔚 [${producerUserId}] Stopping ${stream.getTracks().length} tracks`);
+                    stream.getTracks().forEach(track => {
+                        console.log(`⏹️ [${producerUserId}] Stopping track: ${track.kind}`);
+                        track.stop();
+                    });
+                    remoteStreamsRef.current.delete(producerUserId);
+                }
+                onRemoteStreamRemoved(producerUserId);
+            }
+        };
+
+        const handleProducersList = (message: ProducersListMessage) => {
+            console.log('📋 Received producers list:', message.data.producers);
+            message.data.producers.forEach((p) => {
+                if (p.userId !== userId) {
+                    consume(p.producerId, p.userId);
+                }
+            });
+        };
+
+        addMessageHandler('new-producer', handleNewProducer);
+        addMessageHandler('producer-closed', handleProducerClosed);
+        addMessageHandler('producers-list', handleProducersList);
+
+        return () => {
+            removeMessageHandler('new-producer', handleNewProducer);
+            removeMessageHandler('producer-closed', handleProducerClosed);
+            removeMessageHandler('producers-list', handleProducersList);
+        };
+    }, [addMessageHandler, removeMessageHandler, consume, onRemoteStreamRemoved, userId]);
+
+    // ✅ Добавляем обработчик для обновления имен пользователей
+    useEffect(() => {
+        const updateUserNameMapping = () => {
+            const users = useRoomStore.getState().users;
+            users.forEach(user => {
+                userNamesRef.current.set(user.id, user.username);
+            });
+        };
+
+        updateUserNameMapping();
+        const unsubscribe = useRoomStore.subscribe(updateUserNameMapping);
+
+        return () => {
+            unsubscribe();
+        };
+    }, []);
 
     // 5. Очистка
     const cleanup = useCallback(() => {
@@ -363,7 +436,8 @@ export const useMediasoup = ({
         sendTransportRef.current?.close();
         recvTransportRef.current?.close();
         deviceRef.current = null;
-        userNamesRef.current.clear(); // ✅ Очищаем маппинг при очистке
+        userNamesRef.current.clear();
+        iceServersRef.current = []; // Очищаем ref с iceServers
     }, []);
 
     // 6. Обработка ошибок
