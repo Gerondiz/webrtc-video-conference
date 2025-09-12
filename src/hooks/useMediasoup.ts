@@ -95,6 +95,19 @@ export const useMediasoup = ({
                             callback();
                         });
 
+                        // --- ДОБАВИТЬ ЛОГИРОВАНИЕ СОБЫТИЙ ТРАНСПОРТА ---
+                        transport.on('connectionstatechange', (state) => {
+                            console.log(`🔌 Transport (${direction}) connection state changed to:`, state);
+                            if (state === 'failed' || state === 'disconnected') {
+                                console.error(`❌ Transport (${direction}) failed or disconnected! State:`, state);
+                                // Здесь можно добавить дополнительную диагностику
+                            }
+                        });
+
+                        transport.on('icecandidateerror', (state) => {
+                            console.log(`🧊 Transport (${direction}) icecandidateerror:`, state);
+                        });
+
                         if (direction === 'send') {
                             transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
                                 try {
@@ -283,40 +296,40 @@ export const useMediasoup = ({
             }
         };
 
-const handleProducerClosed = (message: ProducerClosedMessage) => {
-    const { producerId, userId: producerUserId } = message.data;
-    console.log(`🔚 [${producerUserId}] Producer closed notification: ${producerId}`);
-    
-    // Ищем consumer по producerId
-    let consumerToClose: Consumer | undefined;
-    let consumerId: string | undefined;
-    
-    consumersRef.current.forEach((consumer, id) => {
-        if (consumer.producerId === producerId) {
-            consumerToClose = consumer;
-            consumerId = id;
-        }
-    });
-    
-    if (consumerToClose && consumerId) {
-        console.log(`🔚 [${producerUserId}] Closing consumer ${consumerId} for producer ${producerId}`);
-        consumerToClose.close(); // Это вызовет событие 'close' у consumer.observer
-    } else {
-        // Consumer уже закрыт или не найден, вызываем onRemoteStreamRemoved напрямую
-        console.log(`🔚 [${producerUserId}] No active consumer, cleaning up stream directly`);
-        // Очищаем поток напрямую
-        const stream = remoteStreamsRef.current.get(producerUserId);
-        if (stream) {
-            console.log(`🔚 [${producerUserId}] Stopping ${stream.getTracks().length} tracks`);
-            stream.getTracks().forEach(track => {
-                console.log(`⏹️ [${producerUserId}] Stopping track: ${track.kind}`);
-                track.stop();
+        const handleProducerClosed = (message: ProducerClosedMessage) => {
+            const { producerId, userId: producerUserId } = message.data;
+            console.log(`🔚 [${producerUserId}] Producer closed notification: ${producerId}`);
+
+            // Ищем consumer по producerId
+            let consumerToClose: Consumer | undefined;
+            let consumerId: string | undefined;
+
+            consumersRef.current.forEach((consumer, id) => {
+                if (consumer.producerId === producerId) {
+                    consumerToClose = consumer;
+                    consumerId = id;
+                }
             });
-            remoteStreamsRef.current.delete(producerUserId);
-        }
-        onRemoteStreamRemoved(producerUserId);
-    }
-};
+
+            if (consumerToClose && consumerId) {
+                console.log(`🔚 [${producerUserId}] Closing consumer ${consumerId} for producer ${producerId}`);
+                consumerToClose.close(); // Это вызовет событие 'close' у consumer.observer
+            } else {
+                // Consumer уже закрыт или не найден, вызываем onRemoteStreamRemoved напрямую
+                console.log(`🔚 [${producerUserId}] No active consumer, cleaning up stream directly`);
+                // Очищаем поток напрямую
+                const stream = remoteStreamsRef.current.get(producerUserId);
+                if (stream) {
+                    console.log(`🔚 [${producerUserId}] Stopping ${stream.getTracks().length} tracks`);
+                    stream.getTracks().forEach(track => {
+                        console.log(`⏹️ [${producerUserId}] Stopping track: ${track.kind}`);
+                        track.stop();
+                    });
+                    remoteStreamsRef.current.delete(producerUserId);
+                }
+                onRemoteStreamRemoved(producerUserId);
+            }
+        };
 
         const handleProducersList = (message: ProducersListMessage) => {
             console.log('📋 Received producers list:', message.data.producers);
