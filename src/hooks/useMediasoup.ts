@@ -67,9 +67,9 @@ export const useMediasoup = ({
     // --- Добавлено: Функция для получения ICE серверов от SFU ---
     const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
 
-        const ICEtestin = true;
+        const ICEtesting = false;
 
-        if (ICEtestin) {
+        if (ICEtesting) {
             return [
                 { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "62ebcffbcf6c87c9ed6ce75c", credential: "6QxuV6wxCX5bEgL6" }
             ];
@@ -202,13 +202,12 @@ export const useMediasoup = ({
 
                 addMessageHandler('webRtcTransportCreated', handler);
 
-                // --- КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Отправка сообщения на сервер ---
+                // --- Отправка сообщения на сервер ---
                 const createMessage: CreateTransportMessage = {
                     type: 'create-transport',
                     data: { direction },
                 };
                 sendMessage(createMessage);
-                // --- КОНЕЦ КРИТИЧЕСКОГО ИЗМЕНЕНИЯ ---
             });
         },
         [sendMessage, addMessageHandler, removeMessageHandler, userId]
@@ -303,7 +302,7 @@ export const useMediasoup = ({
             }
             // ---
 
-            // Захардкоженные rtpCapabilities (как в вашем коде)
+            // Захардкоженные rtpCapabilities
             const rtpCapabilities: RtpCapabilities = {
                 codecs: [
                     {
@@ -337,12 +336,10 @@ export const useMediasoup = ({
             await deviceRef.current.load({ routerRtpCapabilities: rtpCapabilities });
             console.log('✅ Mediasoup Device loaded');
 
-            // --- КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: Добавлен await ---
             sendTransportRef.current = await createTransport('send');
             console.log('✅ Send transport created');
             recvTransportRef.current = await createTransport('recv');
             console.log('✅ Recv transport created');
-            // --- КОНЕЦ КРИТИЧЕСКОГО ИЗМЕНЕНИЯ ---
 
             for (const track of localStream.getTracks()) {
                 const kind = track.kind as 'audio' | 'video';

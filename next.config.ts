@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     '20.0.0.107',
     '20.0.0.107:3000', // если порт важен
+    '20.0.0.107:3001',
     'localhost:3000',
     '127.0.0.1:3000',
     'https://localhost:8000',

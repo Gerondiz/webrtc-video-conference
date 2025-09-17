@@ -18,9 +18,11 @@ export default function RoomPage() {
   const { stream: localStream } = useMediaStream();
   const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://backend-mediasoup.onrender.com/wss';
   const webSocket = useWebSocket(
-    process.env.NEXT_PUBLIC_WS_URL || "wss://backend-mediasoup.onrender.com/wss"
+    wsUrl
   );
+  console.log("Attempting WebSocket connection to:", wsUrl);
   const { isConnected } = webSocket;
 
   // ✅ Передаем общий WebSocket в useRoomConnection
@@ -114,10 +116,6 @@ export default function RoomPage() {
     leaveRoom();
     router.push("/");
   }, [leaveRoom, router]);
-
-  // const openSettings = useCallback(() => {
-  //   console.log("Open settings");
-  // }, []);
 
 return (
   <div className="flex flex-col h-screen bg-gray-900">
