@@ -60,9 +60,9 @@ export default function RoomHeader({
 
   return (
     <header className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
-          Room: <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{roomId}</span>
+      <div className="flex items-center space-x-4 min-w-0">
+        <h1 className="text-xl font-semibold text-gray-800 dark:text-white truncate">
+          Room: <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm">{roomId}</span>
         </h1>
         <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-300">
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30">
@@ -90,7 +90,7 @@ export default function RoomHeader({
                 : "fill-red-500 text-red-500"
             }
           />
-          <span className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:block">
             {wsConnected
               ? "Online"
               : wsConnecting

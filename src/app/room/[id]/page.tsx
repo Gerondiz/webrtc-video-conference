@@ -9,7 +9,7 @@ import { useRoomStore } from "@/stores/useRoomStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useChatPanel } from "@/hooks/useChatPanel";
 import RoomHeader from "@/components/RoomPage/RoomHeader";
-// import VideoGrid from "@/components/RoomPage/VideoGrid";
+import MobileRoomHeader from "@/components/RoomPage/MobileRoomHeader";
 import AdaptiveVideoGrid from '@/components/RoomPage/AdaptiveVideoGrid';
 import ChatPanel from "@/components/RoomPage/ChatPanel";
 
@@ -19,10 +19,7 @@ export default function RoomPage() {
   const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://backend-mediasoup.onrender.com/wss';
-  const webSocket = useWebSocket(
-    wsUrl
-  );
-  console.log("Attempting WebSocket connection to:", wsUrl);
+  const webSocket = useWebSocket(wsUrl);
   const { isConnected } = webSocket;
 
   // ✅ Передаем общий WebSocket в useRoomConnection
@@ -54,12 +51,9 @@ export default function RoomPage() {
     roomId,
     userId: currentUserId || "unknown",
     onRemoteStreamAdded: (stream, userId, username) => {
-      // ✅ Здесь теперь будет правильное имя пользователя
-      console.log(`🎥 Remote stream added for user ${userId} (${username})`);
       setRemoteStreams((prev) => [...prev, { userId, username, stream }]);
     },
     onRemoteStreamRemoved: (userId) => {
-      console.log(`🎥 Remote stream removed for user ${userId}`);
       setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
     },
     webSocket,
@@ -117,24 +111,40 @@ export default function RoomPage() {
     router.push("/");
   }, [leaveRoom, router]);
 
-return (
-  <div className="flex flex-col h-screen bg-gray-900">
-    <RoomHeader
-      roomId={roomId}
-      onToggleMic={toggleMic}
-      onToggleVideo={toggleVideo}
-      onLeaveRoom={handleLeaveRoom}
-      onToggleChat={toggleChat}
-      isChatOpen={isChatOpen}
-      hasNewMessages={hasNewMessages}
-    />
+  return (
+    <div className="flex flex-col h-screen bg-gray-900">
+      {/* Десктопный заголовок */}
+      <div className="hidden md:block">
+        <RoomHeader
+          roomId={roomId}
+          onToggleMic={toggleMic}
+          onToggleVideo={toggleVideo}
+          onLeaveRoom={handleLeaveRoom}
+          onToggleChat={toggleChat}
+          isChatOpen={isChatOpen}
+          hasNewMessages={hasNewMessages}
+        />
+      </div>
+      
+      {/* Мобильный заголовок */}
+      <div className="md:hidden">
+        <MobileRoomHeader
+          roomId={roomId}
+          onToggleMic={toggleMic}
+          onToggleVideo={toggleVideo}
+          onLeaveRoom={handleLeaveRoom}
+          onToggleChat={toggleChat}
+          isChatOpen={isChatOpen}
+          hasNewMessages={hasNewMessages}
+        />
+      </div>
 
-    <div className="flex flex-1 overflow-hidden">
-      <AdaptiveVideoGrid remoteStreams={remoteStreams} />
-      {isChatOpen && (
-        <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
-      )}
+      <div className="flex flex-1 overflow-block">
+        <AdaptiveVideoGrid remoteStreams={remoteStreams} />
+        {isChatOpen && (
+          <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 }
