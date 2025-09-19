@@ -30,9 +30,8 @@ export default function AdaptiveVideoGrid({ remoteStreams }: AdaptiveVideoGridPr
   }, [localStream, remoteStreams]);
 
   return (
-    // Этот контейнер обеспечивает максимальную высоту и скрывает переполнение
-    // Центрирование теперь происходит внутри GridView
-    <div className="flex-1 overflow-hidden">
+    // Убираем overflow-hidden отсюда, переносим в GridView
+    <div className="flex-1">
       {layout === 'grid' ? (
         <GridView remoteStreams={remoteStreams} totalParticipants={totalParticipants} />
       ) : (

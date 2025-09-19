@@ -139,7 +139,7 @@ export default function RoomPage() {
         />
       </div>
 
-      <div className="flex flex-1 overflow-block">
+      <div className="flex flex-1 overflow-hidden">
         <AdaptiveVideoGrid remoteStreams={remoteStreams} />
         {isChatOpen && (
           <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
