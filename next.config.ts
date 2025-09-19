@@ -8,7 +8,10 @@ const nextConfig: NextConfig = {
     'localhost:3000',
     '127.0.0.1:3000',
     'https://localhost:8000',
-    'https://backend-mediasoup.onrender.com'
+    'https://backend-mediasoup.onrender.com',
+    'https://109.238.92.48:3001',
+    'https://109.238.92.48:3001',
+    'https://s1367541.smartape-vps.com'
   ],
   /* config options here */
   output: 'standalone',
