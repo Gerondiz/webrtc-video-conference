@@ -1,4 +1,4 @@
-// src/components/RoomPage/layouts/GridView.tsx
+// src/components/RoomPage/layouts/OldGridView.tsx
 "use client";
 import { useMemo } from "react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
@@ -16,7 +16,7 @@ interface GridViewProps {
   totalParticipants: number;
 }
 
-export default function GridView({
+export default function OldGridView({
   remoteStreams,
   totalParticipants,
 }: GridViewProps) {

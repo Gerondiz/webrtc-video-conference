@@ -14,7 +14,38 @@ interface TestGridViewProps {
   remoteStreams: VideoStream[];
 }
 
-export default function TestGridView({ remoteStreams }: TestGridViewProps) {
+// Мобильная версия
+function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-start overflow-scroll p-4">
+      {allStreams.length > 0 ? (
+        allStreams.map((streamData) => (
+          <div
+            key={streamData.userId}
+            className="w-full rounded-xl overflow-hidden relative mb-4"
+            style={{ aspectRatio: "16 / 9" }}
+          >
+            <VideoPlayer
+              stream={streamData.stream}
+              username={streamData.username}
+              isLocal={false}
+            />
+            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
+              {streamData.username}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold bg-opacity-50 bg-black">
+          No Streams
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Десктопная версия
+function DesktopGridView({ remoteStreams }: TestGridViewProps) {
   const { stream: localStream } = useMediaStream();
   const users = useRoomStore((state) => state.users);
   const maxTilesPerRow = useVideoLayoutStore((state) => state.maxTilesPerRow);
@@ -61,7 +92,6 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Вычисляем количество плиток в строке
   const tilesPerRow = calculateTilesPerRow(
     containerSize.width,
     containerSize.height,
@@ -69,13 +99,11 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
     maxTilesPerRow
   );
 
-  // Разбиваем потоки на строки
   const rows = [];
   for (let i = 0; i < allStreams.length; i += tilesPerRow) {
     rows.push(allStreams.slice(i, i + tilesPerRow));
   }
 
-  // Вычисляем размер плитки
   const tileSize = calculateTileSize(
     containerSize.width,
     containerSize.height,
@@ -87,7 +115,7 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
     <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
       <div
         ref={containerRef}
-        className="w-full rounded-xl shadow-lg bg-red-400"
+        className="w-full rounded-xl shadow-lg"
         style={{
           aspectRatio: "16 / 9",
           width: "100%",
@@ -95,7 +123,6 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
           minHeight: "250px",
         }}
       >
-        {/* Контейнер для строк с отступами */}
         <div
           className="w-full h-full rounded-xl overflow-scroll flex flex-col items-center justify-center p-4"
           style={{ gap: "8px" }}
@@ -144,27 +171,45 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
   );
 }
 
-// Функция вычисления количества плиток в строке
+export default function TestGridView({ remoteStreams }: TestGridViewProps) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
+      {/* Общий контейнер с aspectRatio */}
+      <div
+        className="w-full"
+        style={{
+          aspectRatio: "16 / 9",
+          width: "100%",
+          height: "100%",
+        }}
+      >
+        {/* Десктопная версия */}
+        <div className="hidden md:block w-full h-full">
+          <DesktopGridView remoteStreams={remoteStreams} />
+        </div>
+
+        {/* Мобильная версия */}
+        <div className="md:hidden w-full h-full">
+          <MobileGridView allStreams={remoteStreams} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function calculateTilesPerRow(
   containerWidth: number,
   containerHeight: number,
   participantCount: number,
   maxTilesPerRow: number,
-  minTileWidth: number = 200,
-  // minTileHeight: number = 112.5 // 200 * 9 / 16
+  minTileWidth: number = 200
 ): number {
-  // Если экран сильно сжат по высоте — выстраиваем в одну строку (все участники в ряд)
   if (containerHeight <= 460) return participantCount;
-
-  // Если экран сильно сжат по ширине — тоже одна колонка
   if (containerWidth < minTileWidth * 2) return 1;
-
-  // Специальные случаи
   if (participantCount === 2) return 2;
-  if (participantCount === 3 || participantCount === 4) return 2; // всегда 2 в строке
-  if (participantCount >= 5 && containerWidth <= 1200) return 2; // 2 колонки
+  if (participantCount === 3 || participantCount === 4) return 2;
+  if (participantCount >= 5 && containerWidth <= 1200) return 2;
 
-  // Рассчитываем количество плиток в строке
   const maxPossibleByWidth = Math.floor(containerWidth / minTileWidth);
   const maxPossibleByParticipants = Math.min(participantCount, maxTilesPerRow);
 
@@ -175,7 +220,6 @@ function calculateTilesPerRow(
   );
 }
 
-// Функция вычисления размера одной плитки
 function calculateTileSize(
   containerWidth: number,
   containerHeight: number,
@@ -191,19 +235,15 @@ function calculateTileSize(
     return { width: 0, height: 0 };
   }
 
-  // Константы
-  const gapBetweenRows = 64; // отступ между строками
-  const marginBetweenTiles = 32; // отступ между плитками (на одну плитку)
-  const totalHorizontalMarginPerRow = (cols + 1) * marginBetweenTiles; // 4px слева + между + справа
+  const gapBetweenRows = 64;
+  const marginBetweenTiles = 16;
+  const totalHorizontalMarginPerRow = (cols + 1) * marginBetweenTiles;
 
-  // Вычисляем ширину одной плитки, учитывая отступы
   let tileWidth = (containerWidth - totalHorizontalMarginPerRow) / cols;
-  let tileHeight = tileWidth * (9 / 16); // сохраняем 16:9
+  let tileHeight = tileWidth * (9 / 16);
 
-  // Проверяем, помещаются ли строки по высоте
   const totalVerticalGap = (rows - 1) * gapBetweenRows;
   if (tileHeight * rows + totalVerticalGap > containerHeight) {
-    // Если не помещается — вычисляем по высоте
     tileHeight = (containerHeight - totalVerticalGap) / rows;
     tileWidth = tileHeight * (16 / 9);
   }
