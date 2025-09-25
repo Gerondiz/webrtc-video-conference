@@ -1,4 +1,3 @@
-// src/components/RoomPage/SettingsMenu.tsx
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Settings, Grid, Users } from "lucide-react";
@@ -21,6 +20,8 @@ export default function SettingsMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const layout = useVideoLayoutStore((state) => state.layout);
   const setLayout = useVideoLayoutStore((state) => state.setLayout);
+  const maxTilesPerRow = useVideoLayoutStore((state) => state.maxTilesPerRow);
+  const setMaxTilesPerRow = useVideoLayoutStore((state) => state.setMaxTilesPerRow);
 
   // Закрываем меню при клике вне его
   useEffect(() => {
@@ -154,11 +155,11 @@ export default function SettingsMenu({
 
                   <div
                     className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      layout === "test-grid" // изменяем на 'test-grid'
+                      layout === "test-grid"
                         ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                     }`}
-                    onClick={() => setLayout("test-grid")} // изменяем на 'test-grid'
+                    onClick={() => setLayout("test-grid")}
                   >
                     <div className="flex items-center">
                       <Grid
@@ -182,9 +183,20 @@ export default function SettingsMenu({
                 <h4 className="text-md font-medium text-gray-800 dark:text-white mb-3">
                   General Settings
                 </h4>
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <Settings size={48} className="mx-auto mb-3 opacity-50" />
-                  <p>Settings will be available soon</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Max Tiles Per Row
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="6"
+                      value={maxTilesPerRow}
+                      onChange={(e) => setMaxTilesPerRow(Number(e.target.value))}
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
             )}
