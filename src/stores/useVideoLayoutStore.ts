@@ -1,7 +1,7 @@
 // src/stores/useVideoLayoutStore.ts
 import { create } from 'zustand';
 
-type VideoLayout = 'grid' | 'spotlight';
+type VideoLayout = 'grid' | 'spotlight' | 'test-grid';
 
 interface VideoLayoutStore {
   layout: VideoLayout;

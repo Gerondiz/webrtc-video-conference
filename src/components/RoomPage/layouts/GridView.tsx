@@ -105,7 +105,7 @@ export default function GridView({
         - `min-h-0`: КРИТИЧНО для вертикального центрирования.
         - `gap-3 sm:gap-4`: Адаптивные промежутки.
       */}
-      <div className="flex flex-row flex-wrap justify-center w-full mx-auto gap-3 sm:gap-4 min-h-0">
+      <div className="flex flex-row flex-wrap justify-center w-full mx-auto gap-1 sm:gap-1 min-h-0">
         {/* Объединяем локальное и удаленные видео в один массив для рендера */}
         {[
           ...(localStream

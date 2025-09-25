@@ -1,8 +1,8 @@
 // src/components/RoomPage/SettingsMenu.tsx
-'use client';
-import { useState, useRef, useEffect } from 'react';
-import { Settings, Grid, Users } from 'lucide-react';
-import { useVideoLayoutStore } from '@/stores/useVideoLayoutStore';
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { Settings, Grid, Users } from "lucide-react";
+import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore";
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -10,8 +10,14 @@ interface SettingsMenuProps {
   onOpen: () => void;
 }
 
-export default function SettingsMenu({ isOpen, onClose, onOpen }: SettingsMenuProps) {
-  const [activeTab, setActiveTab] = useState<'appearance' | 'settings'>('appearance');
+export default function SettingsMenu({
+  isOpen,
+  onClose,
+  onOpen,
+}: SettingsMenuProps) {
+  const [activeTab, setActiveTab] = useState<"appearance" | "settings">(
+    "appearance"
+  );
   const menuRef = useRef<HTMLDivElement>(null);
   const layout = useVideoLayoutStore((state) => state.layout);
   const setLayout = useVideoLayoutStore((state) => state.setLayout);
@@ -25,26 +31,26 @@ export default function SettingsMenu({ isOpen, onClose, onOpen }: SettingsMenuPr
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
 
   // Закрываем меню при нажатии Escape
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
     }
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
 
@@ -59,34 +65,36 @@ export default function SettingsMenu({ isOpen, onClose, onOpen }: SettingsMenuPr
       </button>
 
       {isOpen && (
-        <div 
+        <div
           ref={menuRef}
           className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50"
         >
           {/* Заголовок меню */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Settings</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              Settings
+            </h3>
           </div>
 
           {/* Вкладки */}
           <div className="flex border-b border-gray-200 dark:border-gray-700">
             <button
               className={`flex-1 py-3 px-4 text-center font-medium ${
-                activeTab === 'appearance'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                activeTab === "appearance"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-500"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
-              onClick={() => setActiveTab('appearance')}
+              onClick={() => setActiveTab("appearance")}
             >
               Appearance
             </button>
             <button
               className={`flex-1 py-3 px-4 text-center font-medium ${
-                activeTab === 'settings'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                activeTab === "settings"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-500"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
-              onClick={() => setActiveTab('settings')}
+              onClick={() => setActiveTab("settings")}
             >
               Settings
             </button>
@@ -94,21 +102,28 @@ export default function SettingsMenu({ isOpen, onClose, onOpen }: SettingsMenuPr
 
           {/* Содержимое вкладок */}
           <div className="p-4 max-h-96 overflow-y-auto">
-            {activeTab === 'appearance' && (
+            {activeTab === "appearance" && (
               <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-3">Video Layout</h4>
+                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-3">
+                  Video Layout
+                </h4>
                 <div className="space-y-3">
                   <div
                     className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      layout === 'grid'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      layout === "grid"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                     }`}
-                    onClick={() => setLayout('grid')}
+                    onClick={() => setLayout("grid")}
                   >
                     <div className="flex items-center">
-                      <Grid size={20} className="text-gray-600 dark:text-gray-400 mr-2" />
-                      <span className="font-medium text-gray-800 dark:text-white">Grid View</span>
+                      <Grid
+                        size={20}
+                        className="text-gray-600 dark:text-gray-400 mr-2"
+                      />
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        Grid View
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       All participants in equal-sized tiles
@@ -117,27 +132,56 @@ export default function SettingsMenu({ isOpen, onClose, onOpen }: SettingsMenuPr
 
                   <div
                     className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      layout === 'spotlight'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      layout === "spotlight"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                     }`}
-                    onClick={() => setLayout('spotlight')}
+                    onClick={() => setLayout("spotlight")}
                   >
                     <div className="flex items-center">
-                      <Users size={20} className="text-gray-600 dark:text-gray-400 mr-2" />
-                      <span className="font-medium text-gray-800 dark:text-white">Spotlight View</span>
+                      <Users
+                        size={20}
+                        className="text-gray-600 dark:text-gray-400 mr-2"
+                      />
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        Spotlight View
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       Focus on active speaker with thumbnails
+                    </p>
+                  </div>
+
+                  <div
+                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      layout === "test-grid" // изменяем на 'test-grid'
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                    onClick={() => setLayout("test-grid")} // изменяем на 'test-grid'
+                  >
+                    <div className="flex items-center">
+                      <Grid
+                        size={20}
+                        className="text-gray-600 dark:text-gray-400 mr-2"
+                      />
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        Test Grid View
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Single tile for testing layout
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {activeTab === 'settings' && (
+            {activeTab === "settings" && (
               <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-3">General Settings</h4>
+                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-3">
+                  General Settings
+                </h4>
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Settings size={48} className="mx-auto mb-3 opacity-50" />
                   <p>Settings will be available soon</p>
