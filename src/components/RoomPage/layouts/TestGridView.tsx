@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import VideoPlayer from "@/components/RoomPage/VideoPlayer";
 import { useRoomStore } from "@/stores/useRoomStore";
@@ -15,6 +16,9 @@ interface TestGridViewProps {
 export default function TestGridView({ remoteStreams }: TestGridViewProps) {
   const { stream: localStream } = useMediaStream();
   const users = useRoomStore((state) => state.users);
+
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const activeRemoteStreams = remoteStreams.filter((remote) => {
     const userExists = users.some(
@@ -40,21 +44,39 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
     ...activeRemoteStreams.map((s) => ({ ...s, isLocal: false })),
   ];
 
-  // Жёстко задаём количество плиток в строке
   const tilesPerRow = 2;
 
-  // Разбиваем потоки на строки по 2 элемента
   const rows = [];
   for (let i = 0; i < allStreams.length; i += tilesPerRow) {
     rows.push(allStreams.slice(i, i + tilesPerRow));
   }
 
-  console.log("allStreams:", allStreams);
-  console.log("rows:", rows);
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setContainerSize({ width, height });
+      }
+    });
+
+    resizeObserver.observe(element);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const tileSize = calculateTileSize(
+    containerSize.width,
+    containerSize.height,
+    tilesPerRow,
+    rows.length
+  );
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-4 overflow-scroll">
+    <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
       <div
+        ref={containerRef}
         className="w-full rounded-xl shadow-lg bg-red-400"
         style={{
           aspectRatio: "16 / 9",
@@ -63,26 +85,30 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
           minHeight: "250px",
         }}
       >
-        {/* Контейнер для строк */}
-        <div className="w-full h-full rounded-xl overflow-hidden flex flex-col items-center justify-center">
+        {/* Контейнер для строк с отступами */}
+        <div
+          className="w-full h-full rounded-xl overflow-scroll flex flex-col items-center justify-center p-4" // добавлен p-4
+          style={{ gap: "8px" }} // отступы между строками
+        >
           {rows.length > 0 ? (
             rows.map((row, rowIndex) => (
               <div
                 key={rowIndex}
-                className={`flex ${row.length === 1 ? 'justify-center' : ''}`}
+                className="flex justify-center w-full"
                 style={{
-                  minHeight: "300px", // минимальная высота строки
-                  maxHeight: "800px", // максимальная высота строки
+                  minHeight: `${tileSize.height}px`,
+                  maxHeight: `${tileSize.height}px`,
                 }}
               >
                 {row.map((streamData) => (
                   <div
                     key={streamData.userId}
-                    className="flex-1 rounded-xl overflow-hidden relative m-1 justify-center" // m-1 — отступы между плитками
+                    className="rounded-xl overflow-hidden relative" // убран m-1
                     style={{
-                      aspectRatio: "16 / 9",
-                      maxWidth: "1000px",
-                      flex: row.length === 1 ? "0 0 auto" : "1",
+                      width: `${tileSize.width}px`,
+                      height: `${tileSize.height}px`,
+                      flex: "0 0 auto",
+                      margin: "4px", // отступы между плитками
                     }}
                   >
                     <VideoPlayer
@@ -106,4 +132,34 @@ export default function TestGridView({ remoteStreams }: TestGridViewProps) {
       </div>
     </div>
   );
+}
+
+function calculateTileSize(
+  containerWidth: number,
+  containerHeight: number,
+  cols: number,
+  rows: number
+): { width: number; height: number } {
+  if (containerWidth === 0 || containerHeight === 0 || cols === 0 || rows === 0) {
+    return { width: 0, height: 0 };
+  }
+
+  // Константы
+  const gapBetweenRows = 64; // отступ между строками
+  const marginBetweenTiles = 16; // отступ между плитками (на одну плитку)
+  const totalHorizontalMarginPerRow = (cols + 1) * marginBetweenTiles; // 4px слева + между + справа
+
+  // Вычисляем ширину одной плитки, учитывая отступы
+  let tileWidth = (containerWidth - totalHorizontalMarginPerRow) / cols;
+  let tileHeight = tileWidth * (9 / 16); // сохраняем 16:9
+
+  // Проверяем, помещаются ли строки по высоте
+  const totalVerticalGap = (rows - 1) * gapBetweenRows;
+  if (tileHeight * rows + totalVerticalGap > containerHeight) {
+    // Если не помещается — вычисляем по высоте
+    tileHeight = (containerHeight - totalVerticalGap) / rows;
+    tileWidth = tileHeight * (16 / 9);
+  }
+
+  return { width: tileWidth, height: tileHeight };
 }

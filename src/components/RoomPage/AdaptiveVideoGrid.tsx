@@ -30,7 +30,7 @@ export default function AdaptiveVideoGrid({ remoteStreams }: AdaptiveVideoGridPr
   }, [localStream, remoteStreams]);
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 relative overflow-hidden">
       {layout === 'grid' ? (
         <GridView remoteStreams={remoteStreams} totalParticipants={totalParticipants} />
       ) : layout === 'spotlight' ? (
