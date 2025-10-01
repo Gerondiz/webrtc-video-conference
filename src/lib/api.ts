@@ -1,6 +1,7 @@
 // src/lib/api.ts
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import { toast } from 'react-toastify';
+import { getSignalingUrl } from '@/lib/tunnel-url';
 
 // Типы для API ответов
 interface ApiResponse {
@@ -26,9 +27,12 @@ interface ApiError extends AxiosError {
   response?: AxiosResponse<ApiResponse>;
 }
 
-const createApiClient = (): AxiosInstance => {
+const createApiClient = async (): Promise<AxiosInstance> => { // ✅ Сделан async
+  // ✅ Получаем URL динамически
+  const baseURL = await getSignalingUrl(process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com');
+
   const instance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com',
+    baseURL: baseURL, // ✅ Используем динамический URL
     timeout: 30000,
     headers: {
       'Content-Type': 'application/json',
@@ -40,7 +44,7 @@ const createApiClient = (): AxiosInstance => {
     (response: AxiosResponse<ApiResponse>) => response,
     (error: ApiError) => {
       console.error('API Error:', error);
-      
+
       // Обработка ошибок от сервера
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
@@ -51,7 +55,7 @@ const createApiClient = (): AxiosInstance => {
       } else {
         toast.error('An unexpected error occurred. Please try again.');
       }
-      
+
       return Promise.reject(error);
     }
   );
@@ -59,9 +63,19 @@ const createApiClient = (): AxiosInstance => {
   return instance;
 };
 
-export const apiClient = createApiClient();
+// ✅ Обновляем экспорт, чтобы использовать асинхронный вызов
+let apiClientInstance: AxiosInstance | null = null;
 
+export const getApiClient = async (): Promise<AxiosInstance> => {
+  if (!apiClientInstance) {
+    apiClientInstance = await createApiClient();
+  }
+  return apiClientInstance;
+};
+
+// Обновляем функции API
 export const createRoom = async (username: string): Promise<CreateRoomResponse> => {
+  const apiClient = await getApiClient(); // ✅ Используем асинхронный клиент
   try {
     const response = await apiClient.post<CreateRoomResponse>('/api/create-room', { username });
     return response.data;
@@ -72,6 +86,7 @@ export const createRoom = async (username: string): Promise<CreateRoomResponse> 
 };
 
 export const joinRoom = async (roomId: string, username: string): Promise<ApiResponse> => {
+  const apiClient = await getApiClient(); // ✅
   try {
     const response = await apiClient.post<ApiResponse>('/api/join-room', { roomId, username });
     return response.data;
@@ -82,6 +97,7 @@ export const joinRoom = async (roomId: string, username: string): Promise<ApiRes
 };
 
 export const checkServerStatus = async (): Promise<HealthCheckResponse> => {
+  const apiClient = await getApiClient(); // ✅
   try {
     const response = await apiClient.get<HealthCheckResponse>('/api/health');
     return response.data;

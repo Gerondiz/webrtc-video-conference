@@ -1,13 +1,14 @@
 // app/room/[id]/page.tsx
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { useMediasoup } from "@/hooks/useMediasoup";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useChatPanel } from "@/hooks/useChatPanel";
+import { getWebSocketUrl } from "@/lib/tunnel-url"; // ✅ Импортируем хелпер
 import RoomHeader from "@/components/RoomPage/RoomHeader";
 import MobileRoomHeader from "@/components/RoomPage/MobileRoomHeader";
 import AdaptiveVideoGrid from '@/components/RoomPage/AdaptiveVideoGrid';
@@ -15,20 +16,45 @@ import ChatPanel from "@/components/RoomPage/ChatPanel";
 
 export default function RoomPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const usernameFromParams = searchParams.get('username') || '';
   const { stream: localStream } = useMediaStream();
   const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://backend-mediasoup.onrender.com/wss';
-  const webSocket = useWebSocket(wsUrl);
+  // ✅ Состояние для URL WebSocket
+  const [wsUrl, setWsUrl] = useState<string | null>(null);
+
+  // ✅ Загружаем WebSocket URL асинхронно
+  useEffect(() => {
+    const fetchWsUrl = async () => {
+      const url = await getWebSocketUrl(process.env.NEXT_PUBLIC_WS_URL || 'wss://backend-mediasoup.onrender.com/wss');
+      setWsUrl(url);
+    };
+    fetchWsUrl();
+  }, []);
+
+  // ✅ Вызываем все хуки **до** любой проверки условий
+  // Если wsUrl === null, useWebSocket может обработать это (например, не подключаться)
+  // или можно передать пустую строку, если хук устроен так.
+  // ВАЖНО: useWebSocket должен быть устроен так, чтобы не падать при пустом URL.
+  const webSocket = useWebSocket(wsUrl || ''); // ✅ Передаём пустую строку, если wsUrl ещё нет
   const { isConnected } = webSocket;
 
-  // ✅ Передаем общий WebSocket в useRoomConnection
+  // ✅ Остальные хуки вызываются всегда
   const { roomId, sendChatMessage, leaveRoom } = useRoomConnection({
     webSocket,
   });
 
-  // ✅ Извлекаем currentUserId из store
   const { currentUserId } = useRoomStore();
+
+  // ✅ Устанавливаем username из параметров URL в store (если ещё не установлен)
+  useEffect(() => {
+    if (usernameFromParams && !currentUserId) {
+      // Предположим, у тебя есть action в store для установки username и генерации ID
+      // useRoomStore.getState().setUsernameAndGenerateId(usernameFromParams);
+      // Или вызови action, если он есть
+    }
+  }, [usernameFromParams, currentUserId]);
 
   // Состояние для удалённых потоков
   const [remoteStreams, setRemoteStreams] = useState<
@@ -111,6 +137,11 @@ export default function RoomPage() {
     router.push("/");
   }, [leaveRoom, router]);
 
+  // ✅ Рендерим лоадер, если wsUrl ещё не загружен
+  if (!wsUrl) {
+    return <div>Loading...</div>; // Показываем лоадер, пока URL не загрузился
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-900">
       {/* Десктопный заголовок */}
@@ -125,7 +156,7 @@ export default function RoomPage() {
           hasNewMessages={hasNewMessages}
         />
       </div>
-      
+
       {/* Мобильный заголовок */}
       <div className="md:hidden">
         <MobileRoomHeader

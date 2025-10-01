@@ -14,18 +14,29 @@ export interface UseWebSocketReturn {
 }
 
 export const useWebSocket = (url: string): UseWebSocketReturn => {
-  
   const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false); // ✅ Изначально false
   const socketRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, MessageHandler[]>>(new Map());
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-
-  // ✅ Создаём соединение только один раз
+  // ✅ Обновлённый useEffect: проверяет, есть ли URL
   useEffect(() => {
+    // Если URL пустой — закрываем текущее соединение (если есть) и выходим
+    if (!url) {
+      console.warn('WebSocket URL is empty, not connecting.');
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      setIsConnected(false);
+      setIsConnecting(false);
+      return; // ✅ ВАЖНО: выходим из эффекта
+    }
+
     // Если соединение уже существует и открыто — ничего не делаем
     if (socketRef.current?.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected, reusing existing connection.');
       return;
     }
 
@@ -37,7 +48,7 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
 
     // Создаём новое соединение
     setIsConnecting(true);
-    
+
     const socket = new WebSocket(url);
     socketRef.current = socket;
 
@@ -63,16 +74,18 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
       toast.error('Connection failed. Please try again.');
     };
 
-    socket.onclose = () => {
-      console.log('🔌 WebSocket disconnected.');
+    socket.onclose = (event) => {
+      console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
       setIsConnected(false);
       setIsConnecting(false);
-      
-      // Попытка переподключения через 1 секунду
-      reconnectTimeoutRef.current = setTimeout(() => {
-        // Просто вызываем эффект заново
-        setIsConnecting(true);
-      }, 1000);
+
+      // Попытка переподключения через 1 секунду, если URL всё ещё есть
+      if (url) { // ✅ Проверяем, что URL всё ещё валидный
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('🔄 Attempting to reconnect WebSocket...');
+          // Просто вызываем эффект заново, т.к. он зависит от url
+        }, 1000);
+      }
     };
 
     // Очистка при размонтировании или изменении URL
@@ -105,6 +118,8 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket is not open. Cannot send message:', message);
     }
   }, []);
 

@@ -4,6 +4,7 @@ import { useMediaStream } from '@/contexts/MediaStreamContext';
 import * as mediasoupClient from 'mediasoup-client';
 import { UseWebSocketReturn } from '@/hooks/useWebSocket';
 import { useRoomStore } from '@/stores/useRoomStore';
+import { getSignalingUrl } from '@/lib/tunnel-url';
 
 // ✅ Правильный импорт типов из mediasoup-client
 type RtpCapabilities = mediasoupClient.types.RtpCapabilities;
@@ -67,33 +68,25 @@ export const useMediasoup = ({
     // --- Добавлено: Функция для получения ICE серверов от SFU ---
     const fetchIceServers = useCallback(async (): Promise<RTCIceServer[]> => {
 
-        const ICEtesting = false;
+        try {
+            // Используем NEXT_PUBLIC_SIGNALING_SERVER, так как он уже содержит базовый HTTPS URL
+            const sfuBaseUrl = await getSignalingUrl(process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com');
+            const iceServersUrl = `${sfuBaseUrl}/ice-servers`;
 
-        if (ICEtesting) {
+            console.log(`🔧 Fetching ICE servers from: ${iceServersUrl}`);
+            const response = await fetch(iceServersUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const iceServers: RTCIceServer[] = await response.json();
+            console.log('🔧 Fetched ICE servers for browser:', iceServers);
+            return iceServers;
+        } catch (error) {
+            console.error('❌ Failed to fetch ICE servers from SFU:', error);
+            // Возвращаем резервный TURN сервер Metered для TCP
             return [
                 { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "62ebcffbcf6c87c9ed6ce75c", credential: "6QxuV6wxCX5bEgL6" }
             ];
-        } else {
-            try {
-                // Используем NEXT_PUBLIC_SIGNALING_SERVER, так как он уже содержит базовый HTTPS URL
-                const sfuBaseUrl = (process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com').trim();
-                const iceServersUrl = `${sfuBaseUrl}/ice-servers`;
-
-                console.log(`🔧 Fetching ICE servers from: ${iceServersUrl}`);
-                const response = await fetch(iceServersUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const iceServers: RTCIceServer[] = await response.json();
-                console.log('🔧 Fetched ICE servers for browser:', iceServers);
-                return iceServers;
-            } catch (error) {
-                console.error('❌ Failed to fetch ICE servers from SFU:', error);
-                // Возвращаем резервный TURN сервер Metered для TCP
-                return [
-                    { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "62ebcffbcf6c87c9ed6ce75c", credential: "6QxuV6wxCX5bEgL6" }
-                ];
-            }
         }
     }, []);
     // ---
