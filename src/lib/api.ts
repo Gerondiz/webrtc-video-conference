@@ -64,13 +64,8 @@ const createApiClient = async (): Promise<AxiosInstance> => { // ✅ Сдела�
 };
 
 // ✅ Обновляем экспорт, чтобы использовать асинхронный вызов
-let apiClientInstance: AxiosInstance | null = null;
-
 export const getApiClient = async (): Promise<AxiosInstance> => {
-  if (!apiClientInstance) {
-    apiClientInstance = await createApiClient();
-  }
-  return apiClientInstance;
+  return await createApiClient(); // <--- Всегда создаём новый клиент
 };
 
 // Обновляем функции API
