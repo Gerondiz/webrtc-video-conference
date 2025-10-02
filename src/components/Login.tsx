@@ -1,6 +1,6 @@
 // src/components/Login.tsx
 "use client";
-import React, { useState, useEffect } from "react"; // ✅ Добавлен useEffect
+import React, { useState } from "react";
 import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import { generateUsername } from "@/lib/utils";
 import { createRoom, joinRoom } from "@/lib/api";
 import { useToastHandler } from '@/hooks/useToastHandler';
 import ServerStatus from './ServerStatus';
-import { getSignalingUrl } from '@/lib/tunnel-url'; // ✅ Импортируем хелпер
 
 interface LoginProps {
   onLogin: () => void;
@@ -21,22 +20,6 @@ export default function Login({ onLogin }: LoginProps) {
   const [isJoiningRoom, setIsJoiningRoom] = useState<boolean>(false);
   const router = useRouter();
   const { showError, showSuccess } = useToastHandler();
-
-  // ✅ useEffect для получения и вывода URL при монтировании компонента
-  useEffect(() => {
-    const fetchAndLogTunnelUrl = async () => {
-      try {
-        // Используем fallback URL из .env, если динамический недоступен
-        const defaultUrl = process.env.NEXT_PUBLIC_SIGNALING_SERVER || 'https://backend-mediasoup.onrender.com';
-        const currentUrl = await getSignalingUrl(defaultUrl);
-        console.log('🔗 Current SFU Server URL (from Login component):', currentUrl);
-      } catch (error) {
-        console.error('❌ Error fetching tunnel URL in Login component:', error);
-      }
-    };
-
-    fetchAndLogTunnelUrl();
-  }, []); // Зависимости пустые - вызовется только при монтировании
 
   const handleCreateRoom = async (): Promise<void> => {
     setIsCreatingRoom(true);
@@ -82,7 +65,7 @@ export default function Login({ onLogin }: LoginProps) {
         <ServerStatus />
       </div>
       
-      {/* <div className="absolute bottom-4 right-4">
+      <div className="absolute bottom-4 right-4">
         <Button
           href="/check-turn"
           className="p-2 rounded-full bg-[rgb(var(--primary-button-light))] hover:bg-[rgb(var(--primary-button-light)/0.9)] dark:bg-[rgb(var(--primary-button-dark))] dark:hover:bg-[rgb(var(--primary-button-dark)/0.9)] focus:outline-none focus:ring-2 focus:ring-offset-2"
@@ -91,7 +74,7 @@ export default function Login({ onLogin }: LoginProps) {
         >
           Check TURN
         </Button>
-      </div> */}
+      </div>
       
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">

@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-     "dev": "next dev  --turbopack --experimental-https --experimental-https-cert ./cert.pem --experimental-https-key ./key.pem",
+    "dev": "next dev  --turbopack --experimental-https --experimental-https-cert ./cert.pem --experimental-https-key ./key.pem",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "axios": "^1.11.0",
+    "axios": "^1.12.2",
     "lucide-react": "^0.541.0",
     "mediasoup-client": "^3.15.6",
     "next": "15.5.0",
