@@ -1,7 +1,8 @@
 // src/components/ServerStatus.tsx
 "use client";
 import { useState, useEffect } from "react";
-import { getApiClient } from "@/lib/api";
+import { apiClient } from "@/lib/api";
+
 interface ServerStatus {
   status: string;
   timestamp: number;
@@ -20,7 +21,6 @@ export default function ServerStatus() {
     const checkServerStatus = async () => {
       try {
         setLoading(true);
-        const apiClient = await getApiClient();
         const response = await apiClient.get('/api/health', {
           timeout: 30000
         });
