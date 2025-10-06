@@ -22,12 +22,12 @@ export default function ServerStatus() {
       try {
         setLoading(true);
         const response = await apiClient.get('/api/health', {
-          timeout: 30000
+          timeout: 5000
         });
         setStatus(response.data);
         setError(null);
       } catch (err) {
-        setError('Server is unavailable or sleeping. Please try again.');
+        setError('Server is unavailable. Please try again.');
         console.error('Server health check failed:', err);
       } finally {
         setLoading(false);
@@ -35,9 +35,7 @@ export default function ServerStatus() {
     };
 
     checkServerStatus();
-
-    const interval = setInterval(checkServerStatus, 30000);
-    return () => clearInterval(interval);
+    // Убрали setInterval и return с clearInterval
   }, []);
 
   if (loading) {
