@@ -120,17 +120,11 @@ export const useMediasoup = ({
                         console.log('🔧 Creating transport with options (including iceServers):', transportOptions);
 
                         let transport: Transport;
-                        const transportOptionsWithPolicy: mediasoupClient.types.TransportOptions = {
-                            ...transportOptions,
-                            additionalSettings: {
-                                iceTransportPolicy: 'relay' // ←←← вот сюда!
-                            }
-                        };
                         try {
                             transport =
                                 direction === 'send'
-                                    ? deviceRef.current!.createSendTransport(transportOptionsWithPolicy)
-                                    : deviceRef.current!.createRecvTransport(transportOptionsWithPolicy);
+                                    ? deviceRef.current!.createSendTransport(transportOptions)
+                                    : deviceRef.current!.createRecvTransport(transportOptions);
                         } catch (creationError: unknown) {
                             console.error(`❌ Error creating ${direction} transport:`, creationError);
                             const errorMessage = creationError instanceof Error ? creationError.message : String(creationError);
