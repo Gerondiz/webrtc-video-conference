@@ -96,33 +96,20 @@ export const testTURNConnection = async (
       const peerConnection = new RTCPeerConnection({
         iceServers: [
           {
-            urls: "stun:stun.relay.metered.ca:80",
+            urls: "stun:stun.l.google.com:19302",
           },
           {
-            urls: "turn:global.relay.metered.ca:80",
-            username: "62ebcffbcf6c87c9ed6ce75c",
-            credential: "6QxuV6wxCX5bEgL6",
+            urls: "turn:sfu.ddns.net:80",
+            username: "turnuser",
+            credential: "12345678",
           },
           {
-            urls: "turn:global.relay.metered.ca:80?transport=tcp",
-            username: "62ebcffbcf6c87c9ed6ce75c",
-            credential: "6QxuV6wxCX5bEgL6",
-          },
-          {
-            urls: "turn:global.relay.metered.ca:443",
-            username: "62ebcffbcf6c87c9ed6ce75c",
-            credential: "6QxuV6wxCX5bEgL6",
-          },
-          {
-            urls: "turns:global.relay.metered.ca:443?transport=tcp",
-            username: "62ebcffbcf6c87c9ed6ce75c",
-            credential: "6QxuV6wxCX5bEgL6",
+            urls: "turn:sfu.ddns.net?transport=tcp",
+            username: "turnuser",
+            credential: "12345678",
           },
         ],
-        // iceServers: [
-        //   { urls: 'stun:stun.l.google.com:19302' },
-        //   { urls: turnServer, username, credential },
-        // ],
+
         iceCandidatePoolSize: 3,
       });
 
