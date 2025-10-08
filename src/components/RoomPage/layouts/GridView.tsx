@@ -22,7 +22,7 @@ function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
         allStreams.map((streamData) => (
           <div
             key={streamData.userId}
-            className="w-full rounded-xl overflow-hidden relative mb-4"
+            className="w-full rounded-xl relative mb-4"
             style={{ aspectRatio: "16 / 9" }}
           >
             <VideoPlayer
