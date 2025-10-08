@@ -14,6 +14,7 @@ export interface User {
   sessionId?: string;
   joinedAt: string;
   isConnected: boolean;
+  isMicMuted?: boolean;
 }
 
 export interface UserJoinedMessage {

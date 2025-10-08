@@ -10,7 +10,7 @@ interface VideoStream {
   stream: MediaStream;
 }
 
-interface TestGridViewProps {
+interface GridViewProps {
   remoteStreams: VideoStream[];
 }
 
@@ -45,7 +45,7 @@ function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
 }
 
 // Десктопная версия
-function DesktopGridView({ remoteStreams }: TestGridViewProps) {
+function DesktopGridView({ remoteStreams }: GridViewProps) {
   const { stream: localStream } = useMediaStream();
   const users = useRoomStore((state) => state.users);
   const maxTilesPerRow = useVideoLayoutStore((state) => state.maxTilesPerRow);
@@ -171,7 +171,7 @@ function DesktopGridView({ remoteStreams }: TestGridViewProps) {
   );
 }
 
-export default function TestGridView({ remoteStreams }: TestGridViewProps) {
+export default function GridView({ remoteStreams }: GridViewProps) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
       {/* Общий контейнер с aspectRatio */}
@@ -235,8 +235,8 @@ function calculateTileSize(
     return { width: 0, height: 0 };
   }
 
-  const gapBetweenRows = 64;
-  const marginBetweenTiles = 16;
+  const gapBetweenRows = 8;
+  const marginBetweenTiles = 4;
   const totalHorizontalMarginPerRow = (cols + 1) * marginBetweenTiles;
 
   let tileWidth = (containerWidth - totalHorizontalMarginPerRow) / cols;

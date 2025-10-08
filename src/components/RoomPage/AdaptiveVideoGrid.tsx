@@ -1,9 +1,8 @@
-// src/components/RoomPage/AdaptiveVideoGrid.tsx
 'use client';
 import { useVideoLayoutStore } from '@/stores/useVideoLayoutStore';
-import OldGridView from '@/components/RoomPage/layouts/OldGridView';
+import GridView from '@/components/RoomPage/layouts/GridView';
 import SpotlightView from '@/components/RoomPage/layouts/SpotlightView';
-import TestGridView from '@/components/RoomPage/layouts/TestGridView'; // добавили
+import OldGridView from '@/components/RoomPage/layouts/OldGridView';
 import { useMediaStream } from '@/contexts/MediaStreamContext';
 import { useMemo } from 'react';
 
@@ -32,14 +31,13 @@ export default function AdaptiveVideoGrid({ remoteStreams }: AdaptiveVideoGridPr
   return (
     <div className="flex-1 relative overflow-hidden">
       {layout === 'grid' ? (
-        <TestGridView remoteStreams={remoteStreams} />
+        <GridView remoteStreams={remoteStreams} /> // теперь использует новый GridView
       ) : layout === 'spotlight' ? (
         <SpotlightView remoteStreams={remoteStreams} />
-      ) : layout === 'test-grid' ? ( // добавили
-         <OldGridView remoteStreams={remoteStreams} totalParticipants={totalParticipants} />
+      ) : layout === 'test-grid' ? ( // можно использовать OldGridView как альтернативу
+        <OldGridView remoteStreams={remoteStreams} totalParticipants={totalParticipants} />
       ) : (
-        <TestGridView remoteStreams={remoteStreams} />
-        
+        <GridView remoteStreams={remoteStreams} />
       )}
     </div>
   );
