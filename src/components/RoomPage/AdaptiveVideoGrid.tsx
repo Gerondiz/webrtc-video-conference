@@ -31,10 +31,10 @@ export default function AdaptiveVideoGrid({ remoteStreams }: AdaptiveVideoGridPr
   return (
     <div className="flex-1 relative overflow-hidden">
       {layout === 'grid' ? (
-        <GridView remoteStreams={remoteStreams} /> // теперь использует новый GridView
+        <GridView remoteStreams={remoteStreams} />
       ) : layout === 'spotlight' ? (
         <SpotlightView remoteStreams={remoteStreams} />
-      ) : layout === 'test-grid' ? ( // можно использовать OldGridView как альтернативу
+      ) : layout === 'test-grid' ? (
         <OldGridView remoteStreams={remoteStreams} totalParticipants={totalParticipants} />
       ) : (
         <GridView remoteStreams={remoteStreams} />

@@ -136,7 +136,7 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
             </div>
           </div>
         ) : (
-          // ✅ Заглушка с фиксированными пропорциями, чтобы не прыгало
+          // ✅ Заглушка с фиксированными пропорциями
           <div
             className="rounded-xl overflow-hidden shadow-lg bg-gray-800 flex items-center justify-center"
             style={{

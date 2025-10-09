@@ -9,15 +9,15 @@ import {
   Circle,
   MessageSquare,
 } from "lucide-react";
-import { useMediaStream } from "@/contexts/MediaStreamContext";
+import { useMediaStream } from "@/contexts/MediaStreamContext"; // ✅ Импортируем
 import { useRoomStore } from "@/stores/useRoomStore";
 import SettingsMenu from "@/components/RoomPage/SettingsMenu";
 import { useState } from "react";
 
 interface RoomHeaderProps {
   roomId: string;
-  onToggleMic: () => void;
-  onToggleVideo: () => void;
+  onToggleMic: () => void; // ✅ Принимаем из RoomPage (toggleAudio)
+  onToggleVideo: () => void; // ✅ Принимаем из RoomPage (toggleVideo)
   onLeaveRoom: () => void;
   onToggleChat: () => void;
   isChatOpen: boolean;
@@ -26,8 +26,8 @@ interface RoomHeaderProps {
 
 export default function RoomHeader({
   roomId,
-  onToggleMic,
-  onToggleVideo,
+  onToggleMic, // ✅ Это toggleAudio из MediaStreamContext
+  onToggleVideo, // ✅ Это toggleVideo из MediaStreamContext
   onLeaveRoom,
   onToggleChat,
   isChatOpen,
@@ -49,13 +49,13 @@ export default function RoomHeader({
     : isCameraOff;
 
   const handleToggleMic = () => {
-    onToggleMic();
-    useRoomStore.getState().toggleMic();
+    onToggleMic(); // вызывает toggleAudio из MediaStreamContext
+    useRoomStore.getState().toggleMic(); // обновляет Zustand
   };
 
   const handleToggleVideo = () => {
-    onToggleVideo();
-    useRoomStore.getState().toggleCamera();
+    onToggleVideo(); // вызывает toggleVideo из MediaStreamContext
+    useRoomStore.getState().toggleCamera(); // обновляет Zustand
   };
 
   return (

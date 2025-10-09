@@ -2,7 +2,7 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMediaStream } from "@/contexts/MediaStreamContext";
+import { useMediaStream } from "@/contexts/MediaStreamContext"; // ✅ Импортируем
 import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { useMediasoup } from "@/hooks/useMediasoup";
 import { useRoomStore } from "@/stores/useRoomStore";
@@ -15,7 +15,7 @@ import ChatPanel from "@/components/RoomPage/ChatPanel";
 
 export default function RoomPage() {
   const router = useRouter();
-  const { stream: localStream } = useMediaStream();
+  const { stream: localStream, toggleAudio, toggleVideo } = useMediaStream(); // ✅ Получаем toggleAudio/toggleVideo
   const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
   const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://backend-mediasoup.onrender.com/wss';
@@ -88,24 +88,6 @@ export default function RoomPage() {
     };
   }, [cleanup]);
 
-  const toggleMic = useCallback(() => {
-    if (localStream) {
-      const audioTracks = localStream.getAudioTracks();
-      audioTracks.forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-    }
-  }, [localStream]);
-
-  const toggleVideo = useCallback(() => {
-    if (localStream) {
-      const videoTracks = localStream.getVideoTracks();
-      videoTracks.forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-    }
-  }, [localStream]);
-
   const handleLeaveRoom = useCallback(() => {
     leaveRoom();
     router.push("/");
@@ -117,8 +99,8 @@ export default function RoomPage() {
       <div className="hidden md:block">
         <RoomHeader
           roomId={roomId}
-          onToggleMic={toggleMic}
-          onToggleVideo={toggleVideo}
+          onToggleMic={toggleAudio} // ✅ Передаём toggleAudio из MediaStreamContext
+          onToggleVideo={toggleVideo} // ✅ Передаём toggleVideo из MediaStreamContext
           onLeaveRoom={handleLeaveRoom}
           onToggleChat={toggleChat}
           isChatOpen={isChatOpen}
@@ -130,8 +112,8 @@ export default function RoomPage() {
       <div className="md:hidden">
         <MobileRoomHeader
           roomId={roomId}
-          onToggleMic={toggleMic}
-          onToggleVideo={toggleVideo}
+          onToggleMic={toggleAudio} // ✅ Передаём toggleAudio из MediaStreamContext
+          onToggleVideo={toggleVideo} // ✅ Передаём toggleVideo из MediaStreamContext
           onLeaveRoom={handleLeaveRoom}
           onToggleChat={toggleChat}
           isChatOpen={isChatOpen}

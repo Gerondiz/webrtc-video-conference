@@ -262,6 +262,15 @@ export interface TransportConnectedMessage {
   };
 }
 
+
+export interface MicStatusChangedMessage {
+  type: 'mic-status-changed';
+  data: {
+    userId: string;
+    isMuted: boolean;
+  };
+}
+
 // === Базовый тип для всех сообщений WebSocket ===
 export type WebSocketMessage =
   | JoinRoomMessage
@@ -286,4 +295,5 @@ export type WebSocketMessage =
   | ProducerClosedMessage
   | ProducersListMessage
   | WebRtcTransportCreatedMessage
-  | TransportConnectedMessage;
+  | TransportConnectedMessage
+  | MicStatusChangedMessage;

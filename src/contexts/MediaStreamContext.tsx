@@ -1,6 +1,6 @@
 // contexts/MediaStreamContext.tsx
 'use client';
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { MediaDevicesStatus } from '@/types';
 import { checkMediaDevices, getMediaDevicesWithPermissions } from '@/lib/utils';
 
@@ -33,76 +33,95 @@ export const MediaStreamProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
 
-const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Promise<void> => {
-  if (isInitializing) {
-    return; // Если уже инициализируется — выходим
-  }
-  
-  setIsInitializing(true);
-  setError(null);
-  
-  try {
-    // Проверяем доступные устройства
-    const status = await checkMediaDevices();
-    setDevicesStatus(status);
-    
-    // Если нет устройств, устанавливаем соответствующий статус
-    if (!status.hasCamera && !status.hasMicrophone) {
-      setError('No media devices found');
-      setHasAttemptedInitialization(true);
+  // ✅ Восстанавливаем состояние из sessionStorage при запуске
+  useEffect(() => {
+    const savedAudio = sessionStorage.getItem('isAudioEnabled');
+    const savedVideo = sessionStorage.getItem('isVideoEnabled');
+
+    if (savedAudio !== null) {
+      setIsAudioEnabled(JSON.parse(savedAudio));
+    }
+    if (savedVideo !== null) {
+      setIsVideoEnabled(JSON.parse(savedVideo));
+    }
+  }, []);
+
+  const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Promise<void> => {
+    if (isInitializing) {
       return;
     }
     
-    // Используем переданные constraints или стандартные на основе доступных устройств
-    const mediaConstraints = constraints || {
-      video: status.hasCamera,
-      audio: status.hasMicrophone,
-    };
+    setIsInitializing(true);
+    setError(null);
     
-    // Останавливаем текущий поток, если он есть
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+    try {
+      const status = await checkMediaDevices();
+      setDevicesStatus(status);
+      
+      if (!status.hasCamera && !status.hasMicrophone) {
+        setError('No media devices found');
+        setHasAttemptedInitialization(true);
+        return;
+      }
+      
+      const mediaConstraints = constraints || {
+        video: status.hasCamera,
+        audio: status.hasMicrophone,
+      };
+      
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      
+      const mediaStream = await getMediaDevicesWithPermissions(mediaConstraints);
+      setStream(mediaStream);
+      setHasAttemptedInitialization(true);
+      
+      if (mediaStream) {
+        // ✅ Применяем сохранённое состояние к трекам
+        const audioTracks = mediaStream.getAudioTracks();
+        const videoTracks = mediaStream.getVideoTracks();
+
+        audioTracks.forEach(track => {
+          track.enabled = JSON.parse(sessionStorage.getItem('isAudioEnabled') || 'true');
+        });
+        videoTracks.forEach(track => {
+          track.enabled = JSON.parse(sessionStorage.getItem('isVideoEnabled') || 'true');
+        });
+
+        setIsAudioEnabled(audioTracks.some(track => track.enabled));
+        setIsVideoEnabled(videoTracks.some(track => track.enabled));
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to access media devices';
+      setError(errorMessage);
+      console.error('Media initialization error:', err);
+      setHasAttemptedInitialization(true);
+    } finally {
+      setIsInitializing(false);
     }
-    
-    const mediaStream = await getMediaDevicesWithPermissions(mediaConstraints);
-    setStream(mediaStream);
-    setHasAttemptedInitialization(true);
-    
-    // Устанавливаем начальные состояния аудио/видео
-    if (mediaStream) {
-      setIsAudioEnabled(mediaStream.getAudioTracks().some(track => track.enabled));
-      setIsVideoEnabled(mediaStream.getVideoTracks().some(track => track.enabled));
-    }
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Failed to access media devices';
-    setError(errorMessage);
-    console.error('Media initialization error:', err);
-    setHasAttemptedInitialization(true);
-  } finally {
-    setIsInitializing(false);
-  }
-}, [isInitializing, stream]);
+  }, [isInitializing, stream]);
 
   const stopMediaStream = useCallback(() => {
     if (stream) {
-      console.log("stop stream", stream)
       stream.getTracks().forEach(track => track.stop());
       
       setStream(null);
-      console.log("stop stream_", stream)
       setIsAudioEnabled(false);
       setIsVideoEnabled(false);
       setHasAttemptedInitialization(false);
+
+      // ✅ Очищаем sessionStorage при остановке
+      sessionStorage.removeItem('isAudioEnabled');
+      sessionStorage.removeItem('isVideoEnabled');
     }
   }, [stream]);
 
   const updateStreamConstraints = useCallback(async (constraints: MediaStreamConstraints): Promise<void> => {
-    // Останавливаем текущий поток
     if (stream) {
       stopMediaStream();
     }
     
-    // Создаем новый поток с новыми constraints
     await initMedia(constraints);
   }, [stream, stopMediaStream, initMedia]);
 
@@ -112,9 +131,13 @@ const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Prom
       audioTracks.forEach(track => {
         track.enabled = !track.enabled;
       });
-      setIsAudioEnabled(prev => !prev);
+      const newEnabled = !isAudioEnabled;
+      setIsAudioEnabled(newEnabled);
+
+      // ✅ Сохраняем новое состояние в sessionStorage
+      sessionStorage.setItem('isAudioEnabled', JSON.stringify(newEnabled));
     }
-  }, [stream]);
+  }, [stream, isAudioEnabled]);
 
   const toggleVideo = useCallback(() => {
     if (stream) {
@@ -122,9 +145,13 @@ const initMedia = useCallback(async (constraints?: MediaStreamConstraints): Prom
       videoTracks.forEach(track => {
         track.enabled = !track.enabled;
       });
-      setIsVideoEnabled(prev => !prev);
+      const newEnabled = !isVideoEnabled;
+      setIsVideoEnabled(newEnabled);
+
+      // ✅ Сохраняем новое состояние в sessionStorage
+      sessionStorage.setItem('isVideoEnabled', JSON.stringify(newEnabled));
     }
-  }, [stream]);
+  }, [stream, isVideoEnabled]);
 
   return (
     <MediaStreamContext.Provider
