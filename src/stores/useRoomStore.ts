@@ -6,8 +6,6 @@ interface RoomStore {
   wsConnected: boolean;
   wsConnecting: boolean;
   users: User[];
-  isMicMuted: boolean;
-  isCameraOff: boolean;
   currentUserId: string | null;
 
   // Действия
@@ -18,8 +16,7 @@ interface RoomStore {
   addUser: (user: User) => void;
   removeUser: (userId: string) => void;
   updateUserConnectionStatus: (userId: string, isConnected: boolean) => void;
-  toggleMic: () => void;
-  toggleCamera: () => void;
+  updateUserMicStatus: (userId: string, isMuted: boolean) => void;
   reset: () => void;
 }
 
@@ -27,22 +24,18 @@ export const useRoomStore = create<RoomStore>((set) => ({
   wsConnected: false,
   wsConnecting: true,
   users: [],
-  isMicMuted: false,
-  isCameraOff: false,
   currentUserId: null,
 
   setWsConnected: (connected) => set({ wsConnected: connected }),
   setWsConnecting: (connecting) => set({ wsConnecting: connecting }),
   setCurrentUserId: (id) => set({ currentUserId: id }),
 
-  // ЕДИНСТВЕННЫЙ setUsers — обновляет пользователей и устанавливает currentUserId
   setUsers: (users) => {
     const username = sessionStorage.getItem('username') || 'Anonymous';
     const me = users.find((u) => u.username === username);
-
     set({
       users: [...users],
-      currentUserId: me?.id || null, // безопасно: string | null
+      currentUserId: me?.id || null,
     });
   },
 
@@ -69,16 +62,18 @@ export const useRoomStore = create<RoomStore>((set) => ({
       ),
     })),
 
-  toggleMic: () => set((state) => ({ isMicMuted: !state.isMicMuted })),
-  toggleCamera: () => set((state) => ({ isCameraOff: !state.isCameraOff })),
+  updateUserMicStatus: (userId, isMuted) =>
+    set((state) => ({
+      users: state.users.map((u) =>
+        u.id === userId ? { ...u, isMicMuted: isMuted } : u
+      ),
+    })),
 
   reset: () =>
     set({
       wsConnected: false,
       wsConnecting: true,
       users: [],
-      isMicMuted: false,
-      isCameraOff: false,
       currentUserId: null,
     }),
 }));

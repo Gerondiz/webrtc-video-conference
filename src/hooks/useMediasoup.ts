@@ -78,7 +78,7 @@ export const useMediasoup = ({
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const iceServers: RTCIceServer[] = await response.json();
-            console.log('🔧 Fetched ICE servers for browser:', iceServers);
+            // console.log('🔧 Fetched ICE servers for browser:', iceServers);
             return iceServers;
         } catch (error) {
             console.error('❌ Failed to fetch ICE servers from SFU:', error);
@@ -102,7 +102,7 @@ export const useMediasoup = ({
                 return Promise.reject(new Error('User ID not set'));
             }
 
-            return new Promise<Transport>((resolve, reject) => { // Добавлен reject
+            return new Promise<Transport>((resolve, reject) => {
                 const handler = (message: WebRtcTransportCreatedMessage) => {
                     console.log(`✅ Received webRtcTransportCreated for ${message.data.direction}:`, message.data.transportId);
                     if (message.type === 'webRtcTransportCreated' && message.data.direction === direction) {

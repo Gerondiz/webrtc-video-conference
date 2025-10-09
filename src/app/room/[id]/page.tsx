@@ -2,7 +2,7 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMediaStream } from "@/contexts/MediaStreamContext"; // ✅ Импортируем
+import { useMediaStream } from "@/contexts/MediaStreamContext";
 import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { useMediasoup } from "@/hooks/useMediasoup";
 import { useRoomStore } from "@/stores/useRoomStore";
@@ -99,8 +99,8 @@ export default function RoomPage() {
       <div className="hidden md:block">
         <RoomHeader
           roomId={roomId}
-          onToggleMic={toggleAudio} // ✅ Передаём toggleAudio из MediaStreamContext
-          onToggleVideo={toggleVideo} // ✅ Передаём toggleVideo из MediaStreamContext
+          onToggleMic={toggleAudio} 
+          onToggleVideo={toggleVideo}
           onLeaveRoom={handleLeaveRoom}
           onToggleChat={toggleChat}
           isChatOpen={isChatOpen}
@@ -112,8 +112,8 @@ export default function RoomPage() {
       <div className="md:hidden">
         <MobileRoomHeader
           roomId={roomId}
-          onToggleMic={toggleAudio} // ✅ Передаём toggleAudio из MediaStreamContext
-          onToggleVideo={toggleVideo} // ✅ Передаём toggleVideo из MediaStreamContext
+          onToggleMic={toggleAudio}
+          onToggleVideo={toggleVideo}
           onLeaveRoom={handleLeaveRoom}
           onToggleChat={toggleChat}
           isChatOpen={isChatOpen}

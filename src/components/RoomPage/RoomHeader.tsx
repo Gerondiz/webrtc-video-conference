@@ -9,15 +9,15 @@ import {
   Circle,
   MessageSquare,
 } from "lucide-react";
-import { useMediaStream } from "@/contexts/MediaStreamContext"; // ✅ Импортируем
+import { useMediaStream } from "@/contexts/MediaStreamContext";
 import { useRoomStore } from "@/stores/useRoomStore";
 import SettingsMenu from "@/components/RoomPage/SettingsMenu";
 import { useState } from "react";
 
 interface RoomHeaderProps {
   roomId: string;
-  onToggleMic: () => void; // ✅ Принимаем из RoomPage (toggleAudio)
-  onToggleVideo: () => void; // ✅ Принимаем из RoomPage (toggleVideo)
+  onToggleMic: () => void;
+  onToggleVideo: () => void;
   onLeaveRoom: () => void;
   onToggleChat: () => void;
   isChatOpen: boolean;
@@ -26,15 +26,15 @@ interface RoomHeaderProps {
 
 export default function RoomHeader({
   roomId,
-  onToggleMic, // ✅ Это toggleAudio из MediaStreamContext
-  onToggleVideo, // ✅ Это toggleVideo из MediaStreamContext
+  onToggleMic,
+  onToggleVideo,
   onLeaveRoom,
   onToggleChat,
   isChatOpen,
   hasNewMessages = false
 }: RoomHeaderProps) {
   const { stream: localStream } = useMediaStream();
-  const { wsConnected, wsConnecting, users, isMicMuted, isCameraOff } =
+  const { wsConnected, wsConnecting, users} =
     useRoomStore();
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -42,20 +42,18 @@ export default function RoomHeader({
   // Получаем текущее состояние микрофона и камеры из потока
   const actualIsMicMuted = localStream
     ? !localStream.getAudioTracks().some((track) => track.enabled)
-    : isMicMuted;
+    : true;
 
   const actualIsVideoMuted = localStream
     ? !localStream.getVideoTracks().some((track) => track.enabled)
-    : isCameraOff;
+    : true;
 
   const handleToggleMic = () => {
     onToggleMic(); // вызывает toggleAudio из MediaStreamContext
-    useRoomStore.getState().toggleMic(); // обновляет Zustand
   };
 
   const handleToggleVideo = () => {
     onToggleVideo(); // вызывает toggleVideo из MediaStreamContext
-    useRoomStore.getState().toggleCamera(); // обновляет Zustand
   };
 
   return (

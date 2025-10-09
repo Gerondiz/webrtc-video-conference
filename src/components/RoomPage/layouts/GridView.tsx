@@ -19,22 +19,28 @@ function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-start overflow-scroll p-4">
       {allStreams.length > 0 ? (
-        allStreams.map((streamData) => (
-          <div
-            key={streamData.userId}
-            className="w-full rounded-xl relative mb-4"
-            style={{ aspectRatio: "16 / 9" }}
-          >
-            <VideoPlayer
-              stream={streamData.stream}
-              username={streamData.username}
-              isLocal={false}
-            />
-            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
-              {streamData.username}
+        allStreams.map((streamData) => {
+          const user = useRoomStore.getState().users.find(u => u.id === streamData.userId);
+          const isMicMuted = user?.isMicMuted ?? false;
+
+          return (
+            <div
+              key={streamData.userId}
+              className="w-full rounded-xl relative mb-4"
+              style={{ aspectRatio: "16 / 9" }}
+            >
+              <VideoPlayer
+                stream={streamData.stream}
+                username={streamData.username}
+                isLocal={false}
+                isMicMuted={isMicMuted}
+              />
+              <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
+                {streamData.username}
+              </div>
             </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold bg-opacity-50 bg-black">
           No Streams
@@ -137,27 +143,34 @@ function DesktopGridView({ remoteStreams }: GridViewProps) {
                   maxHeight: `${tileSize.height}px`,
                 }}
               >
-                {row.map((streamData) => (
-                  <div
-                    key={streamData.userId}
-                    className="rounded-xl overflow-hidden relative"
-                    style={{
-                      width: `${tileSize.width}px`,
-                      height: `${tileSize.height}px`,
-                      flex: "0 0 auto",
-                      margin: "4px",
-                    }}
-                  >
-                    <VideoPlayer
-                      stream={streamData.stream}
-                      username={streamData.username}
-                      isLocal={streamData.isLocal}
-                    />
-                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
-                      {streamData.username}
+                {row.map((streamData) => {
+                  // ✅ Получаем статус микрофона внутри map
+                  const user = useRoomStore.getState().users.find(u => u.id === streamData.userId);
+                  const isMicMuted = user?.isMicMuted ?? false;
+
+                  return (
+                    <div
+                      key={streamData.userId}
+                      className="rounded-xl overflow-hidden relative"
+                      style={{
+                        width: `${tileSize.width}px`,
+                        height: `${tileSize.height}px`,
+                        flex: "0 0 auto",
+                        margin: "4px",
+                      }}
+                    >
+                      <VideoPlayer
+                        stream={streamData.stream}
+                        username={streamData.username}
+                        isLocal={streamData.isLocal}
+                        isMicMuted={isMicMuted}
+                      />
+                      <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
+                        {streamData.username}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))
           ) : (
@@ -174,7 +187,6 @@ function DesktopGridView({ remoteStreams }: GridViewProps) {
 export default function GridView({ remoteStreams }: GridViewProps) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
-      {/* Общий контейнер с aspectRatio */}
       <div
         className="w-full"
         style={{
@@ -183,12 +195,9 @@ export default function GridView({ remoteStreams }: GridViewProps) {
           height: "100%",
         }}
       >
-        {/* Десктопная версия */}
         <div className="hidden md:block w-full h-full">
           <DesktopGridView remoteStreams={remoteStreams} />
         </div>
-
-        {/* Мобильная версия */}
         <div className="md:hidden w-full h-full">
           <MobileGridView allStreams={remoteStreams} />
         </div>
