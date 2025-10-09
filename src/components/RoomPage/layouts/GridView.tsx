@@ -15,9 +15,21 @@ interface GridViewProps {
 }
 
 // Мобильная версия
-function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
+function MobileGridView({ remoteStreams }: { remoteStreams: VideoStream[] }) {
+  const { stream: localStream } = useMediaStream();
+
+  // Подготавливаем все потоки: сначала себя, потом остальных
+  const allStreams = [
+    ...(localStream ? [{
+      userId: 'local',
+      username: 'You',
+      stream: localStream,
+    }] : []),
+    ...remoteStreams,
+  ];
+
   return (
-    <div className="w-full h-full flex flex-col items-center justify-start overflow-scroll p-4">
+    <div className="w-full h-full flex flex-col items-center justify-start overflow-y-auto p-2 pb-20">
       {allStreams.length > 0 ? (
         allStreams.map((streamData) => {
           const user = useRoomStore.getState().users.find(u => u.id === streamData.userId);
@@ -26,13 +38,13 @@ function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
           return (
             <div
               key={streamData.userId}
-              className="w-full rounded-xl relative mb-4"
+              className="w-full rounded-xl relative mb-4 bg-black"
               style={{ aspectRatio: "16 / 9" }}
             >
               <VideoPlayer
                 stream={streamData.stream}
                 username={streamData.username}
-                isLocal={false}
+                isLocal={streamData.userId === 'local'}
                 isMicMuted={isMicMuted}
               />
               <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
@@ -42,7 +54,7 @@ function MobileGridView({ allStreams }: { allStreams: VideoStream[] }) {
           );
         })
       ) : (
-        <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold bg-opacity-50 bg-black">
+        <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
           No Streams
         </div>
       )}
@@ -199,7 +211,7 @@ export default function GridView({ remoteStreams }: GridViewProps) {
           <DesktopGridView remoteStreams={remoteStreams} />
         </div>
         <div className="md:hidden w-full h-full">
-          <MobileGridView allStreams={remoteStreams} />
+          <MobileGridView remoteStreams={remoteStreams} />
         </div>
       </div>
     </div>
