@@ -1,10 +1,11 @@
-'use client';
-import { useVideoLayoutStore } from '@/stores/useVideoLayoutStore';
-import GridView from '@/components/RoomPage/layouts/GridView';
-import SpotlightView from '@/components/RoomPage/layouts/SpotlightView';
-import OldGridView from '@/components/RoomPage/layouts/OldGridView';
-import { useMediaStream } from '@/contexts/MediaStreamContext';
-import { useMemo } from 'react';
+// src/components/RoomPage/AdaptiveVideoGrid.tsx
+"use client";
+import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore";
+import GridView from "@/components/RoomPage/layouts/GridView";
+import SpotlightView from "@/components/RoomPage/layouts/SpotlightView";
+import OldGridView from "@/components/RoomPage/layouts/OldGridView";
+import { useMediaStream } from "@/contexts/MediaStreamContext";
+import { useMemo } from "react";
 
 interface VideoStream {
   userId: string;
@@ -14,30 +15,49 @@ interface VideoStream {
 
 interface AdaptiveVideoGridProps {
   remoteStreams: VideoStream[];
+  activeSpeakerId: string | null;
 }
 
-export default function AdaptiveVideoGrid({ remoteStreams }: AdaptiveVideoGridProps) {
-  const layout = useVideoLayoutStore(state => state.layout);
+export default function AdaptiveVideoGrid({
+  remoteStreams,
+  activeSpeakerId, // ← добавь эту строку!
+}: AdaptiveVideoGridProps) {
+  const layout = useVideoLayoutStore((state) => state.layout);
   const { stream: localStream } = useMediaStream();
 
   const totalParticipants = useMemo(() => {
     const localCount = localStream ? 1 : 0;
-    const remoteCount = remoteStreams.filter(remote =>
-      remote.stream && remote.stream.getTracks().some(track => track.readyState === 'live')
+    const remoteCount = remoteStreams.filter(
+      (remote) =>
+        remote.stream &&
+        remote.stream.getTracks().some((track) => track.readyState === "live")
     ).length;
     return localCount + remoteCount;
   }, [localStream, remoteStreams]);
 
   return (
     <div className="flex-1 relative overflow-hidden">
-      {layout === 'grid' ? (
-        <GridView remoteStreams={remoteStreams} />
-      ) : layout === 'spotlight' ? (
-        <SpotlightView remoteStreams={remoteStreams} />
-      ) : layout === 'test-grid' ? (
-        <OldGridView remoteStreams={remoteStreams} totalParticipants={totalParticipants} />
+      {layout === "grid" ? (
+        <GridView
+          remoteStreams={remoteStreams}
+          activeSpeakerId={activeSpeakerId}
+        />
+      ) : layout === "spotlight" ? (
+        <SpotlightView
+          remoteStreams={remoteStreams}
+          activeSpeakerId={activeSpeakerId}
+        />
+      ) : layout === "test-grid" ? (
+        <OldGridView
+          remoteStreams={remoteStreams}
+          totalParticipants={totalParticipants}
+          activeSpeakerId={activeSpeakerId}
+        />
       ) : (
-        <GridView remoteStreams={remoteStreams} />
+        <GridView
+          remoteStreams={remoteStreams}
+          activeSpeakerId={activeSpeakerId}
+        />
       )}
     </div>
   );

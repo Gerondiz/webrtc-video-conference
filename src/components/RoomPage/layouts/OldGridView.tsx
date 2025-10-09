@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import VideoPlayer from "@/components/RoomPage/VideoPlayer";
 import { useRoomStore } from "@/stores/useRoomStore";
+import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore"; // ← добавлено
 
 interface VideoStream {
   userId: string;
@@ -14,14 +15,17 @@ interface VideoStream {
 interface GridViewProps {
   remoteStreams: VideoStream[];
   totalParticipants: number;
+  activeSpeakerId: string | null; // ← добавлено
 }
 
 export default function OldGridView({
   remoteStreams,
   totalParticipants,
+  activeSpeakerId,
 }: GridViewProps) {
   const { stream: localStream } = useMediaStream();
   const users = useRoomStore((state) => state.users);
+  const isSpeakerHighlightEnabled = useVideoLayoutStore((state) => state.isSpeakerHighlightEnabled); // ← добавлено
 
   const activeStreams = useMemo(() => {
     return remoteStreams.filter((remote) => {
@@ -69,24 +73,27 @@ export default function OldGridView({
             const isMicMuted = user?.isMicMuted ?? false;
             return { ...s, isLocal: false, isMicMuted };
           }),
-        ].map((item) => (
-          <div
-            key={item.userId}
-            className={`flex flex-col ${flexBasisClass}`}
-          >
-            <div className="relative rounded-xl overflow-hidden shadow-lg bg-gray-800 border border-gray-700 w-full h-full">
-              <VideoPlayer
-                stream={item.stream}
-                username={item.username}
-                isLocal={item.isLocal}
-                isMicMuted={item.isMicMuted}
-              />
-              <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
-                {item.username}
+        ].map((item) => {
+          const isSpeaking = isSpeakerHighlightEnabled && activeSpeakerId === item.userId;
+          return (
+            <div
+              key={item.userId}
+              className={`flex flex-col ${flexBasisClass} ${isSpeaking ? 'ring-2 ring-green-500' : ''}`}
+            >
+              <div className="relative rounded-xl overflow-hidden shadow-lg bg-gray-800 border border-gray-700 w-full h-full">
+                <VideoPlayer
+                  stream={item.stream}
+                  username={item.username}
+                  isLocal={item.isLocal}
+                  isMicMuted={item.isMicMuted}
+                />
+                <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full z-10">
+                  {item.username}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {totalParticipants === 0 && (
           <div className="flex items-center justify-center w-full basis-full min-h-[200px]">

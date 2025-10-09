@@ -5,14 +5,21 @@ type VideoLayout = 'grid' | 'spotlight' | 'test-grid';
 
 interface VideoLayoutStore {
   layout: VideoLayout;
+  maxTilesPerRow: number;
+  isSpeakerHighlightEnabled: boolean;
+
   setLayout: (layout: VideoLayout) => void;
-  maxTilesPerRow: number; // новое поле
   setMaxTilesPerRow: (value: number) => void;
+  setIsSpeakerHighlightEnabled: (enabled: boolean) => void;
 }
 
 export const useVideoLayoutStore = create<VideoLayoutStore>((set) => ({
   layout: 'grid',
+  maxTilesPerRow: 4,
+  isSpeakerHighlightEnabled: true,
+
   setLayout: (layout) => set({ layout }),
-  maxTilesPerRow: 4, // по умолчанию
   setMaxTilesPerRow: (maxTilesPerRow) => set({ maxTilesPerRow }),
+  setIsSpeakerHighlightEnabled: (isSpeakerHighlightEnabled) =>
+    set({ isSpeakerHighlightEnabled }),
 }));

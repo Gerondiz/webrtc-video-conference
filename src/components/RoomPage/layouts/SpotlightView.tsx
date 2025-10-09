@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import VideoPlayer from "@/components/RoomPage/VideoPlayer";
 import { useRoomStore } from "@/stores/useRoomStore";
+import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore"; // ← добавлено
 
 interface VideoStream {
   userId: string;
@@ -13,18 +14,21 @@ interface VideoStream {
 
 interface SpotlightViewProps {
   remoteStreams: VideoStream[];
+  activeSpeakerId: string | null; // ← добавлено
 }
 
 interface SpotlightStream {
   stream: MediaStream;
   username: string;
   isLocal: boolean;
-  isMicMuted: boolean; // ← добавлено
+  isMicMuted: boolean;
+  userId: string;
 }
 
-export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
+export default function SpotlightView({ remoteStreams, activeSpeakerId }: SpotlightViewProps) {
   const { stream: localStream } = useMediaStream();
   const users = useRoomStore((state) => state.users);
+  const isSpeakerHighlightEnabled = useVideoLayoutStore((state) => state.isSpeakerHighlightEnabled); // ← добавлено
   const [spotlightUserId, setSpotlightUserId] = useState<string | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,7 +60,8 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
             stream: localStream,
             username: "You (Spotlight)",
             isLocal: true,
-            isMicMuted: false, // локальный статус не отображаем через users[]
+            isMicMuted: false,
+            userId: "local",
           }
         : null;
     }
@@ -73,6 +78,7 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
       username: `${stream.username} (Spotlight)`,
       isLocal: false,
       isMicMuted,
+      userId: stream.userId,
     };
   }, [spotlightUserId, localStream, activeStreams, users]);
 
@@ -107,6 +113,11 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
     return () => resizeObserver.disconnect();
   }, []);
 
+  // Определяем, подсвечивать ли spotlight-поток
+  const isSpotlightSpeaking = spotlightStream &&
+    isSpeakerHighlightEnabled &&
+    activeSpeakerId === spotlightStream.userId;
+
   return (
     <div
       ref={containerRef}
@@ -116,7 +127,9 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
       <div className="flex-1 flex items-center justify-center p-2">
         {spotlightStream ? (
           <div
-            className="rounded-xl overflow-hidden shadow-lg bg-gray-800 relative"
+            className={`rounded-xl overflow-hidden shadow-lg bg-gray-800 relative ${
+              isSpotlightSpeaking ? 'ring-2 ring-green-500' : ''
+            }`}
             style={{
               width: `${spotlightSize.width}px`,
               height: `${spotlightSize.height}px`,
@@ -162,6 +175,10 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
                 spotlightUserId === "local"
                   ? "ring-2 ring-blue-500"
                   : "ring-1 ring-gray-600"
+              } ${
+                isSpeakerHighlightEnabled && activeSpeakerId === 'local'
+                  ? 'ring-2 ring-green-500'
+                  : ''
               }`}
               style={{
                 width: `${(thumbnailHeight * (16 / 9)) - 19}px`,
@@ -179,6 +196,7 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
           {activeStreams.map((stream) => {
             const user = users.find(u => u.id === stream.userId);
             const isMicMuted = user?.isMicMuted ?? false;
+            const isSpeaking = isSpeakerHighlightEnabled && activeSpeakerId === stream.userId;
 
             return (
               <div
@@ -187,7 +205,7 @@ export default function SpotlightView({ remoteStreams }: SpotlightViewProps) {
                   spotlightUserId === stream.userId
                     ? "ring-2 ring-blue-500"
                     : "ring-1 ring-gray-600"
-                }`}
+                } ${isSpeaking ? 'ring-2 ring-green-500' : ''}`}
                 style={{
                   width: `${(thumbnailHeight * (16 / 9)) - 19}px`,
                   height: `${thumbnailHeight - 26}px`,

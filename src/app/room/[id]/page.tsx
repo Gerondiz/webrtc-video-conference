@@ -8,29 +8,31 @@ import { useMediasoup } from "@/hooks/useMediasoup";
 import { useRoomStore } from "@/stores/useRoomStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useChatPanel } from "@/hooks/useChatPanel";
+import { useActiveSpeakerDetection } from "@/hooks/useActiveSpeakerDetection";
+import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore"; // ← добавлено
 import RoomHeader from "@/components/RoomPage/RoomHeader";
 import MobileRoomHeader from "@/components/RoomPage/MobileRoomHeader";
-import AdaptiveVideoGrid from '@/components/RoomPage/AdaptiveVideoGrid';
+import AdaptiveVideoGrid from "@/components/RoomPage/AdaptiveVideoGrid";
 import ChatPanel from "@/components/RoomPage/ChatPanel";
 
 export default function RoomPage() {
   const router = useRouter();
-  const { stream: localStream, toggleAudio, toggleVideo } = useMediaStream(); // ✅ Получаем toggleAudio/toggleVideo
+  const { stream: localStream, toggleAudio, toggleVideo } = useMediaStream();
   const { isChatOpen, hasNewMessages, toggleChat } = useChatPanel();
 
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://backend-mediasoup.onrender.com/wss';
+  const wsUrl =
+    process.env.NEXT_PUBLIC_WS_URL ||
+    "wss://backend-mediasoup.onrender.com/wss";
   const webSocket = useWebSocket(wsUrl);
   const { isConnected } = webSocket;
 
-  // ✅ Передаем общий WebSocket в useRoomConnection
-  const { roomId, sendChatMessage, leaveRoom } = useRoomConnection({
-    webSocket,
-  });
-
-  // ✅ Извлекаем currentUserId из store
+  // ✅ 1. Получаем данные из Zustand ДО использования
   const { currentUserId } = useRoomStore();
+  const isSpeakerHighlightEnabled = useVideoLayoutStore(
+    (state) => state.isSpeakerHighlightEnabled
+  );
 
-  // Состояние для удалённых потоков
+  // ✅ 2. Объявляем состояние потоков
   const [remoteStreams, setRemoteStreams] = useState<
     Array<{
       userId: string;
@@ -38,6 +40,19 @@ export default function RoomPage() {
       stream: MediaStream;
     }>
   >([]);
+
+  // ✅ 3. Теперь можно использовать хук
+  const activeSpeakerId = useActiveSpeakerDetection(
+    remoteStreams,
+    localStream,
+    currentUserId,
+    isSpeakerHighlightEnabled
+  );
+
+  // ✅ 4. Подключаемся к комнате
+  const { roomId, sendChatMessage, leaveRoom } = useRoomConnection({
+    webSocket,
+  });
 
   useEffect(() => {
     console.log(
@@ -59,7 +74,7 @@ export default function RoomPage() {
     webSocket,
   });
 
-  // Запускаем SFU после подключения к WebSocket и получения медиа
+  // Запускаем SFU после подключения
   useEffect(() => {
     if (
       isConnected &&
@@ -81,7 +96,7 @@ export default function RoomPage() {
     }
   }, [isConnected, localStream, currentUserId, initializeMediasoup]);
 
-  // Очистка при выходе
+  // Очистка
   useEffect(() => {
     return () => {
       cleanup();
@@ -95,11 +110,10 @@ export default function RoomPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-900">
-      {/* Десктопный заголовок */}
       <div className="hidden md:block">
         <RoomHeader
           roomId={roomId}
-          onToggleMic={toggleAudio} 
+          onToggleMic={toggleAudio}
           onToggleVideo={toggleVideo}
           onLeaveRoom={handleLeaveRoom}
           onToggleChat={toggleChat}
@@ -107,8 +121,6 @@ export default function RoomPage() {
           hasNewMessages={hasNewMessages}
         />
       </div>
-      
-      {/* Мобильный заголовок */}
       <div className="md:hidden">
         <MobileRoomHeader
           roomId={roomId}
@@ -120,9 +132,11 @@ export default function RoomPage() {
           hasNewMessages={hasNewMessages}
         />
       </div>
-
       <div className="flex flex-1 overflow-scroll">
-        <AdaptiveVideoGrid remoteStreams={remoteStreams} />
+        <AdaptiveVideoGrid
+          remoteStreams={remoteStreams}
+          activeSpeakerId={activeSpeakerId}
+        />
         {isChatOpen && (
           <ChatPanel roomId={roomId} sendMessage={sendChatMessage} />
         )}

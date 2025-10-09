@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+// src/components/RoomPage/layouts/GridView.tsx
+'use client';
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useMediaStream } from "@/contexts/MediaStreamContext";
 import VideoPlayer from "@/components/RoomPage/VideoPlayer";
 import { useRoomStore } from "@/stores/useRoomStore";
@@ -12,21 +14,24 @@ interface VideoStream {
 
 interface GridViewProps {
   remoteStreams: VideoStream[];
+  activeSpeakerId: string | null; // ← исправлен тип
 }
 
 // Мобильная версия
-function MobileGridView({ remoteStreams }: { remoteStreams: VideoStream[] }) {
+function MobileGridView({ remoteStreams, activeSpeakerId }: { remoteStreams: VideoStream[]; activeSpeakerId: string | null }) {
   const { stream: localStream } = useMediaStream();
+  const isSpeakerHighlightEnabled = useVideoLayoutStore(state => state.isSpeakerHighlightEnabled);
 
-  // Подготавливаем все потоки: сначала себя, потом остальных
-  const allStreams = [
-    ...(localStream ? [{
-      userId: 'local',
-      username: 'You',
-      stream: localStream,
-    }] : []),
-    ...remoteStreams,
-  ];
+  const allStreams = useMemo(() => {
+    return [
+      ...(localStream ? [{
+        userId: 'local',
+        username: 'You',
+        stream: localStream,
+      }] : []),
+      ...remoteStreams,
+    ];
+  }, [localStream, remoteStreams]);
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-start overflow-y-auto p-2 pb-20">
@@ -34,11 +39,12 @@ function MobileGridView({ remoteStreams }: { remoteStreams: VideoStream[] }) {
         allStreams.map((streamData) => {
           const user = useRoomStore.getState().users.find(u => u.id === streamData.userId);
           const isMicMuted = user?.isMicMuted ?? false;
+          const isSpeaking = isSpeakerHighlightEnabled && activeSpeakerId === streamData.userId;
 
           return (
             <div
               key={streamData.userId}
-              className="w-full rounded-xl relative mb-4 bg-black"
+              className={`w-full rounded-xl relative mb-4 bg-black ${isSpeaking ? 'ring-2 ring-green-500' : ''}`}
               style={{ aspectRatio: "16 / 9" }}
             >
               <VideoPlayer
@@ -63,10 +69,11 @@ function MobileGridView({ remoteStreams }: { remoteStreams: VideoStream[] }) {
 }
 
 // Десктопная версия
-function DesktopGridView({ remoteStreams }: GridViewProps) {
+function DesktopGridView({ remoteStreams, activeSpeakerId }: GridViewProps) {
   const { stream: localStream } = useMediaStream();
   const users = useRoomStore((state) => state.users);
   const maxTilesPerRow = useVideoLayoutStore((state) => state.maxTilesPerRow);
+  const isSpeakerHighlightEnabled = useVideoLayoutStore(state => state.isSpeakerHighlightEnabled);
 
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -156,14 +163,14 @@ function DesktopGridView({ remoteStreams }: GridViewProps) {
                 }}
               >
                 {row.map((streamData) => {
-                  // ✅ Получаем статус микрофона внутри map
                   const user = useRoomStore.getState().users.find(u => u.id === streamData.userId);
                   const isMicMuted = user?.isMicMuted ?? false;
+                  const isSpeaking = isSpeakerHighlightEnabled && activeSpeakerId === streamData.userId;
 
                   return (
                     <div
                       key={streamData.userId}
-                      className="rounded-xl overflow-hidden relative"
+                      className={`rounded-xl overflow-hidden relative ${isSpeaking ? 'ring-2 ring-green-500' : ''}`}
                       style={{
                         width: `${tileSize.width}px`,
                         height: `${tileSize.height}px`,
@@ -196,7 +203,7 @@ function DesktopGridView({ remoteStreams }: GridViewProps) {
   );
 }
 
-export default function GridView({ remoteStreams }: GridViewProps) {
+export default function GridView({ remoteStreams, activeSpeakerId }: GridViewProps) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
       <div
@@ -208,10 +215,10 @@ export default function GridView({ remoteStreams }: GridViewProps) {
         }}
       >
         <div className="hidden md:block w-full h-full">
-          <DesktopGridView remoteStreams={remoteStreams} />
+          <DesktopGridView remoteStreams={remoteStreams} activeSpeakerId={activeSpeakerId} />
         </div>
         <div className="md:hidden w-full h-full">
-          <MobileGridView remoteStreams={remoteStreams} />
+          <MobileGridView remoteStreams={remoteStreams} activeSpeakerId={activeSpeakerId} />
         </div>
       </div>
     </div>

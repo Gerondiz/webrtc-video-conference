@@ -4,7 +4,7 @@ import { useMediaStream } from '@/contexts/MediaStreamContext';
 import VideoPlayer from '@/components/RoomPage/VideoPlayer';
 import RemoteVideoItem from '@/components/RoomPage/RemoteVideoItem';
 import { useRoomStore } from '@/stores/useRoomStore';
-import { useAudioActivity } from '@/hooks/useAudioActivity';
+import { useAudioActivity } from '@/hooks/useActiveSpeakerDetection';
 
 interface VideoStream {
   userId: string;

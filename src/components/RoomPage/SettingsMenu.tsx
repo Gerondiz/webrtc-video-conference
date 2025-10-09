@@ -1,3 +1,4 @@
+// src/components/RoomPage/SettingsMenu.tsx
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Settings, Grid, Users } from "lucide-react";
@@ -14,14 +15,22 @@ export default function SettingsMenu({
   onClose,
   onOpen,
 }: SettingsMenuProps) {
-  const [activeTab, setActiveTab] = useState<"appearance" | "settings">(
+  const [activeTab, setActiveTab] = useState<"appearance" | "preferences">(
     "appearance"
   );
   const menuRef = useRef<HTMLDivElement>(null);
   const layout = useVideoLayoutStore((state) => state.layout);
   const setLayout = useVideoLayoutStore((state) => state.setLayout);
   const maxTilesPerRow = useVideoLayoutStore((state) => state.maxTilesPerRow);
-  const setMaxTilesPerRow = useVideoLayoutStore((state) => state.setMaxTilesPerRow);
+  const setMaxTilesPerRow = useVideoLayoutStore(
+    (state) => state.setMaxTilesPerRow
+  );
+  const isSpeakerHighlightEnabled = useVideoLayoutStore(
+    (state) => state.isSpeakerHighlightEnabled
+  );
+  const setIsSpeakerHighlightEnabled = useVideoLayoutStore(
+    (state) => state.setIsSpeakerHighlightEnabled
+  );
 
   // Закрываем меню при клике вне его
   useEffect(() => {
@@ -91,13 +100,13 @@ export default function SettingsMenu({
             </button>
             <button
               className={`flex-1 py-3 px-4 text-center font-medium ${
-                activeTab === "settings"
+                activeTab === "preferences"
                   ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-500"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
-              onClick={() => setActiveTab("settings")}
+              onClick={() => setActiveTab("preferences")}
             >
-              Settings
+              Preferences
             </button>
           </div>
 
@@ -178,14 +187,15 @@ export default function SettingsMenu({
               </div>
             )}
 
-            {activeTab === "settings" && (
+            {activeTab === "preferences" && (
               <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-3">
-                  General Settings
+                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-4">
+                  Preferences
                 </h4>
-                <div className="space-y-4">
+                <div className="space-y-5">
+                  {/* Max Tiles Per Row */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Max Tiles Per Row
                     </label>
                     <input
@@ -193,9 +203,33 @@ export default function SettingsMenu({
                       min="1"
                       max="6"
                       value={maxTilesPerRow}
-                      onChange={(e) => setMaxTilesPerRow(Number(e.target.value))}
-                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      onChange={(e) =>
+                        setMaxTilesPerRow(Number(e.target.value))
+                      }
+                      className="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
+                  </div>
+
+                  {/* Highlight Active Speaker */}
+                  <div className="pt-1">
+                    <label className="flex items-left gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSpeakerHighlightEnabled}
+                        onChange={(e) =>
+                          setIsSpeakerHighlightEnabled(e.target.checked)
+                        }
+                        className="mt-0.5 h-4 w-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Highlight active speaker
+                        </span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Show a green border around the person who is speaking
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 // src/components/RoomPage/RemoteVideoItem.tsx
 'use client';
 import VideoPlayer from '@/components/RoomPage/VideoPlayer';
-import { useAudioActivity } from '@/hooks/useAudioActivity';
+import { useAudioActivity } from '@/hooks/useActiveSpeakerDetection';
 
 interface RemoteVideoItemProps {
   userId: string;
