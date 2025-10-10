@@ -32,32 +32,29 @@ export default function MobileRoomHeader({
   onLeaveRoom,
   onToggleChat,
   isChatOpen,
-  hasNewMessages = false
+  hasNewMessages = false,
 }: MobileRoomHeaderProps) {
   const { stream: localStream } = useMediaStream();
-  const { wsConnected, wsConnecting, users, isMicMuted, isCameraOff } =
-    useRoomStore();
-  
+  const { wsConnected, wsConnecting, users } = useRoomStore();
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showControls, setShowControls] = useState(false);
 
   // Получаем текущее состояние микрофона и камеры из потока
   const actualIsMicMuted = localStream
     ? !localStream.getAudioTracks().some((track) => track.enabled)
-    : isMicMuted;
+    : true;
 
   const actualIsVideoMuted = localStream
     ? !localStream.getVideoTracks().some((track) => track.enabled)
-    : isCameraOff;
+    : true;
 
   const handleToggleMic = () => {
     onToggleMic();
-    useRoomStore.getState().toggleMic();
   };
 
   const handleToggleVideo = () => {
     onToggleVideo();
-    useRoomStore.getState().toggleCamera();
   };
 
   return (
@@ -69,13 +66,13 @@ export default function MobileRoomHeader({
             Room: <span className="font-mono text-xs">{roomId}</span>
           </h1>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-300">
             <Users size={14} />
             <span className="text-xs font-medium">{users.length}</span>
           </div>
-          
+
           <div
             className="flex items-center"
             title={
@@ -128,7 +125,7 @@ export default function MobileRoomHeader({
         </div>
 
         <div className="flex space-x-1">
-          <SettingsMenu 
+          <SettingsMenu
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
             onOpen={() => setIsSettingsOpen(true)}
