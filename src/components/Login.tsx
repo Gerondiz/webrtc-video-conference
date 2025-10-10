@@ -65,7 +65,7 @@ export default function Login({ onLogin }: LoginProps) {
         <ServerStatus />
       </div>
       
-      <div className="absolute bottom-4 right-4">
+      {/* <div className="absolute bottom-4 right-4">
         <Button
           href="/check-turn"
           className="p-2 rounded-full bg-[rgb(var(--primary-button-light))] hover:bg-[rgb(var(--primary-button-light)/0.9)] dark:bg-[rgb(var(--primary-button-dark))] dark:hover:bg-[rgb(var(--primary-button-dark)/0.9)] focus:outline-none focus:ring-2 focus:ring-offset-2"
@@ -74,7 +74,7 @@ export default function Login({ onLogin }: LoginProps) {
         >
           Check TURN
         </Button>
-      </div>
+      </div> */}
       
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8">

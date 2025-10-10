@@ -189,9 +189,9 @@ export default function SettingsMenu({
 
             {activeTab === "preferences" && (
               <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-white mb-4">
+                {/* <h4 className="text-md font-medium text-gray-800 dark:text-white mb-4">
                   Preferences
-                </h4>
+                </h4> */}
                 <div className="space-y-5">
                   {/* Max Tiles Per Row */}
                   <div>
