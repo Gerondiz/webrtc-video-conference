@@ -15,8 +15,12 @@ type AvatarMode = "none" | "avatar-static" | "avatar-face" | "avatar-full";
 const AVATAR_PATH = "/models/Anime_School_Teacher.GLB";
 
 export default function TestAvatarPage() {
+  // Получаем поток
   const { stream, initMedia, isInitializing, error } = useMediaStream();
-  const [mode, setMode] = useState<AvatarMode>("none");
+
+  // Флаг инициализации (как в конференции)
+  const [hasMediaInitialized, setHasMediaInitialized] = useState(false);
+  const [mode, setMode] = useState<AvatarMode>("avatar-face");
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -32,10 +36,29 @@ export default function TestAvatarPage() {
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
   const animationFrameRef = useRef<number>(0);
 
-  // Инициализация камеры при монтировании
+  // Инициализация при монтировании
   useEffect(() => {
-    initMedia({ video: true, audio: false });
-  }, [initMedia]);
+    if (!hasMediaInitialized) {
+      const initialize = async () => {
+        try {
+          await initMedia({ video: true, audio: false });
+        } catch (err) {
+          console.error("Init media failed:", err);
+        } finally {
+          setHasMediaInitialized(true);
+        }
+      };
+      initialize();
+    }
+  }, [initMedia, hasMediaInitialized]);
+
+  // Привязка потока к <video>
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.srcObject = stream || null;
+    }
+  }, [stream]);
 
   // Инициализация Three.js сцены
   useEffect(() => {
@@ -100,6 +123,8 @@ export default function TestAvatarPage() {
     try {
       const loader = new GLTFLoader();
       const gltf = await loader.loadAsync(AVATAR_PATH);
+
+      console.log('Анимации:', gltf.animations.map(a => a.name));
 
       const avatar = gltf.scene;
       avatar.scale.set(0.8, 0.8, 0.8);

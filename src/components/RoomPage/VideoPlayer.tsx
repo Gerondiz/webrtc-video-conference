@@ -7,7 +7,7 @@ interface VideoPlayerProps {
   stream: MediaStream;
   username: string;
   isLocal: boolean;
-  isMicMuted?: boolean; // ← новое свойство
+  isMicMuted?: boolean;
 }
 
 export default function VideoPlayer({ stream, isLocal, isMicMuted = false }: VideoPlayerProps) {
