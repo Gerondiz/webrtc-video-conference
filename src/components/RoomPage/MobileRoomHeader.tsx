@@ -35,7 +35,7 @@ export default function MobileRoomHeader({
   hasNewMessages = false
 }: MobileRoomHeaderProps) {
   const { stream: localStream } = useMediaStream();
-  const { wsConnected, wsConnecting, users, isMicMuted, isCameraOff } =
+  const { wsConnected, wsConnecting, users} =
     useRoomStore();
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -44,20 +44,18 @@ export default function MobileRoomHeader({
   // Получаем текущее состояние микрофона и камеры из потока
   const actualIsMicMuted = localStream
     ? !localStream.getAudioTracks().some((track) => track.enabled)
-    : isMicMuted;
+    : true;
 
   const actualIsVideoMuted = localStream
     ? !localStream.getVideoTracks().some((track) => track.enabled)
-    : isCameraOff;
+    : true;
 
   const handleToggleMic = () => {
     onToggleMic();
-    useRoomStore.getState().toggleMic();
   };
 
   const handleToggleVideo = () => {
     onToggleVideo();
-    useRoomStore.getState().toggleCamera();
   };
 
   return (

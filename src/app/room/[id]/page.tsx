@@ -9,7 +9,7 @@ import { useRoomStore } from "@/stores/useRoomStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useChatPanel } from "@/hooks/useChatPanel";
 import { useActiveSpeakerDetection } from "@/hooks/useActiveSpeakerDetection";
-import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore"; // ← добавлено
+import { useVideoLayoutStore } from "@/stores/useVideoLayoutStore";
 import RoomHeader from "@/components/RoomPage/RoomHeader";
 import MobileRoomHeader from "@/components/RoomPage/MobileRoomHeader";
 import AdaptiveVideoGrid from "@/components/RoomPage/AdaptiveVideoGrid";
