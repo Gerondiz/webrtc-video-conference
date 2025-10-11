@@ -10,6 +10,12 @@ import {
   FilesetResolver,
 } from '@mediapipe/tasks-vision';
 
+import {
+  MEDIAPIPE_WASM_URL,
+  FACE_LANDMARKER_MODEL_URL,
+  HAND_LANDMARKER_MODEL_URL,
+} from '@/data/mediapipeUrls';
+
 import BlendshapeDebugger from '@/components/Animated/BlendshapeDebugger';
 import { emotionMapping, EmotionMapItem } from '@/data/emotionMapping';
 
@@ -141,14 +147,11 @@ export default function TestAvatarPage() {
     if (faceLandmarkerRef.current || isFaceLandmarkerReady) return;
 
     try {
-      const filesetResolver = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-      );
+      const filesetResolver = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
 
       const faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task',
+          modelAssetPath: FACE_LANDMARKER_MODEL_URL,
           delegate: 'GPU',
         },
         outputFaceBlendshapes: true,
@@ -167,14 +170,11 @@ export default function TestAvatarPage() {
     if (handLandmarkerRef.current || isHandLandmarkerReady) return;
 
     try {
-      const filesetResolver = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-      );
+      const filesetResolver = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
 
       const handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
         baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task',
+          modelAssetPath: HAND_LANDMARKER_MODEL_URL,
           delegate: 'GPU',
         },
         numHands: 2,
@@ -232,36 +232,36 @@ export default function TestAvatarPage() {
           setCurrentBlendshapes([...categories]); // ← ключевая строка: копируем массив
 
           // Применение морфов
-avatarRef.current?.traverse(child => {
-  if ((child as THREE.Mesh).isMesh) {
-    const mesh = child as THREE.Mesh;
-    
-    if (!mesh.morphTargetInfluences || !mesh.morphTargetDictionary || !categories) return;
+          avatarRef.current?.traverse(child => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
 
-    mesh.morphTargetInfluences.fill(0);
+              if (!mesh.morphTargetInfluences || !mesh.morphTargetDictionary || !categories) return;
 
-    // Найди лучшую эмоцию
-    let bestEmotion: EmotionMapItem | null = null; // ← явная типизация
-    let maxScore = 0;
+              mesh.morphTargetInfluences.fill(0);
 
-    emotionMapping.forEach(emotion => {
-      const score = categories[emotion.mediaPipeIndex]?.score || 0;
-      if (score > maxScore && score > 0.4) {
-        maxScore = score;
-        bestEmotion = emotion;
-      }
-    });
+              // Найди лучшую эмоцию
+              let bestEmotion: EmotionMapItem | null = null; // ← явная типизация
+              let maxScore = 0;
 
-    // Применяем только лучшую эмоцию
-    if (bestEmotion && mesh.morphTargetDictionary) {
-      const morphIndex = mesh.morphTargetDictionary[bestEmotion["morphName"]];
-      if (morphIndex !== undefined) {
-        const intensity = bestEmotion["intensity"] ?? 2.0; // значение по умолчанию
-        mesh.morphTargetInfluences[morphIndex] = Math.min(maxScore * intensity, 1);
-      }
-    }
-  }
-});
+              emotionMapping.forEach(emotion => {
+                const score = categories[emotion.mediaPipeIndex]?.score || 0;
+                if (score > maxScore && score > 0.5) {
+                  maxScore = score;
+                  bestEmotion = emotion;
+                }
+              });
+
+              // Применяем только лучшую эмоцию
+              if (bestEmotion && mesh.morphTargetDictionary) {
+                const morphIndex = mesh.morphTargetDictionary[bestEmotion["morphName"]];
+                if (morphIndex !== undefined) {
+                  const intensity = bestEmotion["intensity"] ?? 2.0; // значение по умолчанию
+                  mesh.morphTargetInfluences[morphIndex] = Math.min(maxScore * intensity, 1);
+                }
+              }
+            }
+          });
         } else {
           setCurrentBlendshapes(null);
         }
