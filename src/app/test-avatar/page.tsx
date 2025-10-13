@@ -1,37 +1,39 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useMediaStream } from '@/contexts/MediaStreamContext';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three-stdlib';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useMediaStream } from "@/contexts/MediaStreamContext";
+import * as THREE from "three";
+import { GLTFLoader } from "three-stdlib";
 import {
   FaceLandmarker,
   HandLandmarker,
   FilesetResolver,
-} from '@mediapipe/tasks-vision';
+} from "@mediapipe/tasks-vision";
 
 import {
   MEDIAPIPE_WASM_URL,
   FACE_LANDMARKER_MODEL_URL,
   HAND_LANDMARKER_MODEL_URL,
-} from '@/data/mediapipeUrls';
+} from "@/data/mediapipeUrls";
 
-import BlendshapeDebugger from '@/components/Animated/BlendshapeDebugger';
-import { emotionMapping, EmotionMapItem } from '@/data/emotionMapping';
+import BlendshapeDebugger from "@/components/Animated/BlendshapeDebugger";
+import { emotionMapping, EmotionMapItem } from "@/data/emotionMapping";
 
-type AvatarMode = 'none' | 'avatar-static' | 'avatar-face' | 'avatar-full';
+type AvatarMode = "none" | "avatar-static" | "avatar-face" | "avatar-full";
 
-const AVATAR_PATH = '/models/Anime_School_Teacher.GLB';
+const AVATAR_PATH = "/models/Anime_School_Teacher.GLB";
 
 export default function TestAvatarPage() {
   const { stream, initMedia, isInitializing, error } = useMediaStream();
   const [hasMediaInitialized, setHasMediaInitialized] = useState(false);
-  const [mode, setMode] = useState<AvatarMode>('none');
+  // ✅ По умолчанию — аватар + лицо
+  const [mode, setMode] = useState<AvatarMode>("none");
   const [isFaceLandmarkerReady, setIsFaceLandmarkerReady] = useState(false);
   const [isHandLandmarkerReady, setIsHandLandmarkerReady] = useState(false);
-  const [currentBlendshapes, setCurrentBlendshapes] = useState<
-    Array<{ displayName: string; score: number }> | null
-  >(null);
+  const [currentBlendshapes, setCurrentBlendshapes] = useState<Array<{
+    displayName: string;
+    score: number;
+  }> | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ export default function TestAvatarPage() {
         try {
           await initMedia({ video: true, audio: false });
         } catch (err) {
-          console.error('Init media failed:', err);
+          console.error("Init media failed:", err);
         } finally {
           setHasMediaInitialized(true);
         }
@@ -86,7 +88,7 @@ export default function TestAvatarPage() {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    container.innerHTML = '';
+    container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
     sceneRef.current = scene;
@@ -101,19 +103,22 @@ export default function TestAvatarPage() {
     animate();
 
     const handleResize = () => {
-      if (!cameraRef.current || !rendererRef.current || !mountRef.current) return;
+      if (!cameraRef.current || !rendererRef.current || !mountRef.current)
+        return;
       const { clientWidth, clientHeight } = mountRef.current;
       cameraRef.current.aspect = clientWidth / clientHeight;
       cameraRef.current.updateProjectionMatrix();
       rendererRef.current.setSize(clientWidth, clientHeight);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameRef.current);
       if (rendererRef.current?.domElement?.parentElement) {
-        rendererRef.current.domElement.parentElement.removeChild(rendererRef.current.domElement);
+        rendererRef.current.domElement.parentElement.removeChild(
+          rendererRef.current.domElement
+        );
       }
     };
   }, []);
@@ -138,7 +143,7 @@ export default function TestAvatarPage() {
         mixerRef.current = new THREE.AnimationMixer(avatar);
       }
     } catch (err) {
-      console.error('Failed to load avatar:', err);
+      console.error("Failed to load avatar:", err);
     }
   }, []);
 
@@ -147,21 +152,26 @@ export default function TestAvatarPage() {
     if (faceLandmarkerRef.current || isFaceLandmarkerReady) return;
 
     try {
-      const filesetResolver = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
+      const filesetResolver = await FilesetResolver.forVisionTasks(
+        MEDIAPIPE_WASM_URL
+      );
 
-      const faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-          modelAssetPath: FACE_LANDMARKER_MODEL_URL,
-          delegate: 'GPU',
-        },
-        outputFaceBlendshapes: true,
-        runningMode: 'VIDEO',
-      });
+      const faceLandmarker = await FaceLandmarker.createFromOptions(
+        filesetResolver,
+        {
+          baseOptions: {
+            modelAssetPath: FACE_LANDMARKER_MODEL_URL,
+            delegate: "GPU",
+          },
+          outputFaceBlendshapes: true,
+          runningMode: "VIDEO",
+        }
+      );
 
       faceLandmarkerRef.current = faceLandmarker;
       setIsFaceLandmarkerReady(true);
     } catch (err) {
-      console.error('Failed to initialize Face Landmarker:', err);
+      console.error("Failed to initialize Face Landmarker:", err);
     }
   }, [isFaceLandmarkerReady]);
 
@@ -170,100 +180,123 @@ export default function TestAvatarPage() {
     if (handLandmarkerRef.current || isHandLandmarkerReady) return;
 
     try {
-      const filesetResolver = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_URL);
+      const filesetResolver = await FilesetResolver.forVisionTasks(
+        MEDIAPIPE_WASM_URL
+      );
 
-      const handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-          modelAssetPath: HAND_LANDMARKER_MODEL_URL,
-          delegate: 'GPU',
-        },
-        numHands: 2,
-        runningMode: 'VIDEO',
-      });
+      const handLandmarker = await HandLandmarker.createFromOptions(
+        filesetResolver,
+        {
+          baseOptions: {
+            modelAssetPath: HAND_LANDMARKER_MODEL_URL,
+            delegate: "GPU",
+          },
+          numHands: 2,
+          runningMode: "VIDEO",
+        }
+      );
 
       handLandmarkerRef.current = handLandmarker;
       setIsHandLandmarkerReady(true);
     } catch (err) {
-      console.error('Failed to initialize Hand Landmarker:', err);
+      console.error("Failed to initialize Hand Landmarker:", err);
     }
   }, [isHandLandmarkerReady]);
 
   // Цикл обработки кадров
   useEffect(() => {
-    if (mode === 'none' || !stream) return;
+    if (mode === "none" || !stream) return;
 
-    if (['avatar-static', 'avatar-face', 'avatar-full'].includes(mode) && !avatarRef.current) {
+    if (
+      ["avatar-static", "avatar-face", "avatar-full"].includes(mode) &&
+      !avatarRef.current
+    ) {
       loadAvatar();
     }
 
-    if ((mode === 'avatar-face' || mode === 'avatar-full') && !isFaceLandmarkerReady) {
+    if (
+      (mode === "avatar-face" || mode === "avatar-full") &&
+      !isFaceLandmarkerReady
+    ) {
       initFaceLandmarker();
     }
-    if (mode === 'avatar-full' && !isHandLandmarkerReady) {
+    if (mode === "avatar-full" && !isHandLandmarkerReady) {
       initHandLandmarker();
     }
 
     const processFrame = (timestamp: number) => {
       const video = videoRef.current;
+      // ✅ Критически важно: видео должно быть в DOM и видимым
       if (!video || video.readyState < 2 || video.videoWidth === 0) {
         animationFrameRef.current = requestAnimationFrame(processFrame);
         return;
       }
 
       if (
-        (mode === 'avatar-face' || mode === 'avatar-full') &&
+        (mode === "avatar-face" || mode === "avatar-full") &&
         faceLandmarkerRef.current &&
         isFaceLandmarkerReady
       ) {
-        const faces = faceLandmarkerRef.current.detectForVideo(video, timestamp);
+        try {
+          const faces = faceLandmarkerRef.current.detectForVideo(
+            video,
+            timestamp
+          );
 
-        // Сброс морфов
-        avatarRef.current?.traverse(child => {
-          if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            if (mesh.morphTargetInfluences) {
-              mesh.morphTargetInfluences.fill(0);
-            }
-          }
-        });
+          if (faces.faceBlendshapes?.[0]?.categories) {
+            const categories = faces.faceBlendshapes[0].categories;
+            setCurrentBlendshapes([...categories]);
 
-        if (faces.faceBlendshapes?.[0]?.categories) {
-          const categories = faces.faceBlendshapes[0].categories;
-          setCurrentBlendshapes([...categories]); // ← ключевая строка: копируем массив
+            avatarRef.current?.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const mesh = child as THREE.Mesh;
+                if (!mesh.morphTargetInfluences || !mesh.morphTargetDictionary)
+                  return;
 
-          // Применение морфов
-          avatarRef.current?.traverse(child => {
-            if ((child as THREE.Mesh).isMesh) {
-              const mesh = child as THREE.Mesh;
+                mesh.morphTargetInfluences.fill(0);
 
-              if (!mesh.morphTargetInfluences || !mesh.morphTargetDictionary || !categories) return;
+                let bestEmotion: EmotionMapItem | null = null;
+                let maxScore = 0;
 
-              mesh.morphTargetInfluences.fill(0);
+                emotionMapping.forEach((emotion) => {
+                  const score = categories[emotion.mediaPipeIndex]?.score || 0;
+                  if (score > maxScore && score > 0.6) {
+                    maxScore = score;
+                    bestEmotion = emotion;
+                  }
+                });
 
-              // Найди лучшую эмоцию
-              let bestEmotion: EmotionMapItem | null = null; // ← явная типизация
-              let maxScore = 0;
-
-              emotionMapping.forEach(emotion => {
-                const score = categories[emotion.mediaPipeIndex]?.score || 0;
-                if (score > maxScore && score > 0.5) {
-                  maxScore = score;
-                  bestEmotion = emotion;
-                }
-              });
-
-              // Применяем только лучшую эмоцию
-              if (bestEmotion && mesh.morphTargetDictionary) {
-                const morphIndex = mesh.morphTargetDictionary[bestEmotion["morphName"]];
-                if (morphIndex !== undefined) {
-                  const intensity = bestEmotion["intensity"] ?? 2.0; // значение по умолчанию
-                  mesh.morphTargetInfluences[morphIndex] = Math.min(maxScore * intensity, 1);
+                if (bestEmotion) {
+                  const morphIndex =
+                    mesh.morphTargetDictionary[bestEmotion["morphName"]];
+                  if (
+                    morphIndex !== undefined &&
+                    morphIndex < mesh.morphTargetInfluences.length
+                  ) {
+                    const intensity = bestEmotion["intensity"] ?? 2.0;
+                    mesh.morphTargetInfluences[morphIndex] = Math.min(
+                      maxScore * intensity,
+                      1
+                    );
+                  }
                 }
               }
-            }
-          });
-        } else {
-          setCurrentBlendshapes(null);
+            });
+          } else {
+            setCurrentBlendshapes(null);
+
+            // Сброс морфов
+            avatarRef.current?.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const mesh = child as THREE.Mesh;
+                if (mesh.morphTargetInfluences) {
+                  mesh.morphTargetInfluences.fill(0);
+                }
+              }
+            });
+          }
+        } catch (err) {
+          console.warn("MediaPipe error:", err);
         }
       }
 
@@ -301,52 +334,57 @@ export default function TestAvatarPage() {
       {isInitializing && <div className="mb-4">Инициализация камеры...</div>}
 
       <div className="flex gap-2 mb-6 flex-wrap">
-        {(['none', 'avatar-static', 'avatar-face', 'avatar-full'] as AvatarMode[]).map((m) => (
+        {(
+          [
+            "none",
+            "avatar-static",
+            "avatar-face",
+            "avatar-full",
+          ] as AvatarMode[]
+        ).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`px-4 py-2 rounded ${mode === m ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
-              }`}
+            className={`px-4 py-2 rounded ${
+              mode === m
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
           >
-            {m === 'none' && 'Видео'}
-            {m === 'avatar-static' && 'Аватар (статичный)'}
-            {m === 'avatar-face' && 'Аватар + Лицо'}
-            {m === 'avatar-full' && 'Аватар + Лицо+Руки'}
+            {m === "none" && "Видео"}
+            {m === "avatar-static" && "Аватар (статичный)"}
+            {m === "avatar-face" && "Аватар + Лицо"}
+            {m === "avatar-full" && "Аватар + Лицо+Руки"}
           </button>
         ))}
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Видео */}
+        {/* Видео — ВСЕГДА ВИДНО */}
         <div className="w-full md:w-1/2">
-          <h2 className="text-lg font-semibold mb-2">Источник видео</h2>
+          <h2 className="text-lg font-semibold mb-2">Камера</h2>
           <video
             ref={videoRef}
             autoPlay
             muted
             playsInline
             style={{
-              width: '100%',
-              aspectRatio: '16/9',
-              opacity: mode === 'none' ? 1 : 0,
-              position: mode === 'none' ? 'static' : 'absolute',
-              top: mode === 'none' ? 'auto' : '-10000px',
-              left: mode === 'none' ? 'auto' : '-10000px',
-              pointerEvents: 'none',
+              width: "100%",
+              aspectRatio: "16/9",
+              // ✅ Видео НЕ скрывается — оно всегда в DOM и видимо
             }}
           />
-          {mode !== 'none' && (
-            <div className="text-sm text-gray-500 italic">Видео скрыто (используется для анализа)</div>
-          )}
         </div>
 
         {/* 3D + Отладка */}
         <div className="w-full md:w-1/2">
           <h2 className="text-lg font-semibold mb-2">Аватар</h2>
-          <div ref={mountRef} style={{ width: '100%', height: '400px', background: '#1a1a1a' }} />
+          <div
+            ref={mountRef}
+            style={{ width: "100%", height: "400px", background: "#1a1a1a" }}
+          />
 
-          {/* Отладчик — только если есть данные */}
-          {mode !== 'none' && currentBlendshapes && (
+          {mode !== "none" && currentBlendshapes && (
             <div className="mt-4">
               <BlendshapeDebugger blendshapes={currentBlendshapes} />
             </div>

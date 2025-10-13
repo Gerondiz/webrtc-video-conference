@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
     'https://localhost:8000',
     'https://backend-mediasoup.onrender.com',
     'https://109.238.92.48:3001',
-    'https://109.238.92.48:3001',
     'https://s1367541.smartape-vps.com',
     'https://cdn.jsdelivr.net/',
     'https://storage.googleapis.com/',
@@ -28,11 +27,9 @@ const nextConfig: NextConfig = {
         {
           key: 'Content-Security-Policy',
           value: `
-            default-src 'self';
             script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net;
             style-src 'self' 'unsafe-inline';
             img-src 'self' data: https:;
-            connect-src 'self' blob: https://cdn.jsdelivr.net https://storage.googleapis.com;
             frame-src 'self';
             object-src 'none';
             base-uri 'self';
