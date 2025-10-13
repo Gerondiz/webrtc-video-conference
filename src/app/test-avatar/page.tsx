@@ -34,6 +34,7 @@ export default function TestAvatarPage() {
     displayName: string;
     score: number;
   }> | null>(null);
+  const [isVideoHidden, setIsVideoHidden] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
@@ -362,7 +363,15 @@ export default function TestAvatarPage() {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Видео — ВСЕГДА ВИДНО */}
         <div className="w-full md:w-1/2">
-          <h2 className="text-lg font-semibold mb-2">Камера</h2>
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-lg font-semibold">Камера</h2>
+            <button
+              onClick={() => setIsVideoHidden(!isVideoHidden)}
+              className="text-sm bg-gray-200 px-2 py-1 rounded"
+            >
+              {isVideoHidden ? "Показать" : "Скрыть"}
+            </button>
+          </div>
           <video
             ref={videoRef}
             autoPlay
@@ -371,7 +380,14 @@ export default function TestAvatarPage() {
             style={{
               width: "100%",
               aspectRatio: "16/9",
-              // ✅ Видео НЕ скрывается — оно всегда в DOM и видимо
+              // visibility: isVideoHidden ? "hidden" : "visible", //останавливает pediapipe
+              position: isVideoHidden ? "absolute" : "static",
+              top: isVideoHidden ? 0 : "auto",
+              left: isVideoHidden ? 0 : "auto",
+              // width: isVideoHidden ? "1px" : "100%",
+              height: isVideoHidden ? "1px" : "auto",
+              overflow: "hidden",
+              pointerEvents: "none",
             }}
           />
         </div>
