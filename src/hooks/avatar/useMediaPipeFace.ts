@@ -6,6 +6,7 @@ import { MEDIAPIPE_WASM_URL, FACE_LANDMARKER_MODEL_URL } from '@/data/mediapipeU
 export const useMediaPipeFace = () => {
   const [isReady, setIsReady] = useState(false);
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
+  const lastMicrosRef = useRef(0);
 
   const init = useCallback(async () => {
     if (faceLandmarkerRef.current || isReady) return;
@@ -24,15 +25,22 @@ export const useMediaPipeFace = () => {
     }
   }, [isReady]);
 
-  const detect = useCallback((video: HTMLVideoElement, timestamp: number) => {
+  const detect = useCallback((video: HTMLVideoElement, timestampMs: number) => {
     if (!faceLandmarkerRef.current) return null;
-    return faceLandmarkerRef.current.detectForVideo(video, timestamp);
+
+    // Переводим в микросекунды и обеспечиваем монотонность
+    const micros = Math.floor(timestampMs * 1000);
+    const safeMicros = Math.max(micros, lastMicrosRef.current + 1);
+    lastMicrosRef.current  = safeMicros;
+
+    return faceLandmarkerRef.current.detectForVideo(video, safeMicros);
   }, []);
 
   const destroy = useCallback(() => {
     faceLandmarkerRef.current?.close();
     faceLandmarkerRef.current = null;
     setIsReady(false);
+    lastMicrosRef.current = 0;
   }, []);
 
   return { isReady, init, detect, destroy };
