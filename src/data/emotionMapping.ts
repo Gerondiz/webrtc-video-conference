@@ -9,9 +9,9 @@ export interface EmotionMapItem {
 export const emotionMapping: EmotionMapItem[] = [
     { name: 'ALL_Neutral', mediaPipeIndex: 0, morphName: 'Fcl_ALL_Neutral', intensity: 2.0 },
     { name: 'ALL_Angry', mediaPipeIndex: 42, morphName: 'Fcl_ALL_Angry' },
-    { name: 'ALL_Fun', mediaPipeIndex: 44, morphName: 'Fcl_ALL_Fun' },
+    // { name: 'ALL_Fun', mediaPipeIndex: 44, morphName: 'Fcl_ALL_Fun' },
     { name: 'ALL_Fun', mediaPipeIndex: 45, morphName: 'Fcl_ALL_Fun' },
-    // { name: 'ALL_Joy', mediaPipeIndex: 45, morphName: 'Fcl_ALL_Joy' },
+    { name: 'ALL_Joy', mediaPipeIndex: 45, morphName: 'Fcl_ALL_Joy' },
     { name: 'ALL_Sorrow', mediaPipeIndex: 38, morphName: 'Fcl_ALL_Sorrow' },
     { name: 'ALL_Surprised', mediaPipeIndex: 25, morphName: 'Fcl_ALL_Surprised' },
     { name: 'BRW_Angry', mediaPipeIndex: 2, morphName: 'Fcl_BRW_Angry' },
